@@ -1,0 +1,65 @@
+---
+import { Icon } from 'astro-icon/components';
+import { contacto, CTA_PRINCIPAL } from '../data/spa';
+---
+
+<!-- Barra fija solo en móvil. Reservar y WhatsApp son las dos únicas cosas que
+     alguien quiere hacer con el pulgar; el resto está en el pie. -->
+<div class="barra">
+  <a class="barra__wa" href={`https://wa.me/${contacto.whatsapp}`} target="_blank" rel="noopener">
+    <Icon name="ph:whatsapp-logo" aria-hidden="true" />
+    WhatsApp
+  </a>
+  <a class="btn barra__cta" href="#reservar">{CTA_PRINCIPAL}</a>
+</div>
+
+<style>
+  .barra {
+    display: none;
+  }
+
+  @media (max-width: 820px) {
+    .barra {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 45;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px var(--pad-x) calc(12px + env(safe-area-inset-bottom));
+      background: rgb(250 248 245 / 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--linea);
+    }
+
+    @supports not (backdrop-filter: blur(4px)) {
+      .barra {
+        background: var(--hueso);
+      }
+    }
+
+    .barra__wa {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 18px;
+      border: 1px solid var(--linea-fuerte);
+      border-radius: var(--r-pill);
+      font-size: 0.844rem;
+      font-weight: 500;
+      color: var(--tinta);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .barra__wa svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .barra__cta {
+      flex: 1;
+    }
+  }
+</style>

@@ -1,0 +1,139 @@
+---
+import { Icon } from 'astro-icon/components';
+import { casa, contacto } from '../data/spa';
+---
+
+<!-- Familia: bloque de color partido. El taupe es el lienzo más oscuro del
+     sistema y marca que esta sección manda; la foto sale del bloque hacia el
+     borde derecho del viewport. Es la única sección con esta composición.
+
+     Sobre taupe solo entran `tinta` y `tinta-2`: el acento aquí da 2.99 y
+     falla. Eso lo resuelven los tokens del lienzo, no una excepción a mano. -->
+<section class="casa lienzo--taupe" id="casa">
+  <div class="casa__rejilla">
+    <div class="casa__texto revelar">
+      <p class="sobre-titulo">{casa.titulo} {casa.tituloAcento}</p>
+      <h2>La casa</h2>
+
+      <p class="entrada">{casa.texto}</p>
+
+      <ul class="casa__puntos">
+        {
+          casa.puntos.map((p) => (
+            <li>
+              <Icon name="ph:check" aria-hidden="true" />
+              {p}
+            </li>
+          ))
+        }
+      </ul>
+
+      <a class="btn btn--linea casa__mapa" href={contacto.mapa} target="_blank" rel="noopener">
+        Cómo llegar
+        <Icon name="ph:arrow-up-right" aria-hidden="true" />
+      </a>
+    </div>
+
+    <div class="casa__medio revelar">
+      <img
+        src={casa.imagen.src}
+        alt={casa.imagen.alt}
+        width={casa.imagen.w}
+        height={casa.imagen.h}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .casa {
+    overflow: hidden;
+  }
+
+  .casa__rejilla {
+    display: grid;
+    grid-template-columns: 1fr 1.05fr;
+    align-items: center;
+    gap: clamp(28px, 4vw, 64px);
+  }
+
+  /* El texto respeta la envoltura; la foto no. Así la imagen llega al borde del
+     viewport sin despegar el texto del resto de la página. */
+  .casa__texto {
+    max-width: calc(var(--ancho) / 2);
+    margin-left: max(var(--pad-x), calc((100vw - var(--ancho)) / 2));
+    padding-block: clamp(56px, 7vw, 108px);
+  }
+
+  .casa__texto h2 {
+    margin-top: 12px;
+  }
+
+  .casa__texto .entrada {
+    margin-top: 20px;
+  }
+
+  .casa__puntos {
+    display: grid;
+    gap: 9px;
+    margin-top: 24px;
+    list-style: none;
+  }
+
+  .casa__puntos li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+
+  .casa__puntos svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    margin-top: 4px;
+  }
+
+  .casa__mapa {
+    margin-top: 28px;
+  }
+
+  .casa__medio {
+    height: 100%;
+    min-height: clamp(360px, 46vw, 580px);
+    /* Redondeada solo del lado que se ve. Por la derecha sale del viewport,
+       así que ahí un radio no pintaría nada. */
+    border-radius: var(--r-sup) 0 0 var(--r-sup);
+    overflow: hidden;
+  }
+
+  .casa__medio img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (max-width: 860px) {
+    .casa__rejilla {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .casa__medio {
+      order: -1;
+      min-height: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 0;
+    }
+
+    .casa__texto {
+      max-width: none;
+      margin-left: 0;
+      padding-inline: var(--pad-x);
+      padding-block: clamp(32px, 7vw, 52px);
+    }
+  }
+</style>

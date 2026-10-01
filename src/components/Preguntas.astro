@@ -1,0 +1,130 @@
+---
+import { Icon } from 'astro-icon/components';
+import { preguntas, contacto } from '../data/spa';
+---
+
+<!-- Familia: acordeón nativo (details/summary).
+
+     Se mantiene el acordeón a propósito aunque sea el patrón obvio: son cinco
+     respuestas largas: abiertas de golpe empujan el pie fuera de la vista, y en
+     una rejilla no caben. `details` lo resuelve sin una línea de JavaScript y
+     con teclado y lectores de pantalla ya funcionando. El estilo es el que
+     cambia: reglas finas, sin cajas y con la serif en el título. -->
+<section class="preguntas seccion lienzo--hueso" id="preguntas">
+  <div class="envoltura preguntas__rejilla">
+    <div class="preguntas__alto revelar">
+      <p class="sobre-titulo">{preguntas.titulo} {preguntas.tituloAcento}</p>
+      <h2>Preguntas</h2>
+      <p class="micro preguntas__ayuda">
+        Si te falta algo, escríbenos por WhatsApp al
+        <a class="enlace" href={`https://wa.me/${contacto.whatsapp}`} target="_blank" rel="noopener">
+          {contacto.telefono}
+        </a>.
+      </p>
+    </div>
+
+    <div class="preguntas__lista revelar">
+      {
+        preguntas.lista.map((p) => (
+          <details class="pregunta">
+            <summary>
+              <span>{p.q}</span>
+              <Icon name="ph:caret-down" class="pregunta__flecha" aria-hidden="true" />
+            </summary>
+            <p>{p.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .preguntas__rejilla {
+    display: grid;
+    grid-template-columns: 0.75fr 1.25fr;
+    gap: clamp(26px, 4vw, 70px);
+    align-items: start;
+  }
+
+  .preguntas__alto {
+    position: sticky;
+    top: calc(var(--alto-cabecera) + 24px);
+  }
+
+  .preguntas__alto h2 {
+    margin-top: 12px;
+  }
+
+  .preguntas__ayuda {
+    margin-top: 18px;
+    max-width: 28ch;
+  }
+
+  .pregunta {
+    border-top: 1px solid var(--linea);
+  }
+
+  .pregunta:last-child {
+    border-bottom: 1px solid var(--linea);
+  }
+
+  .pregunta summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 19px 0;
+    font-size: 0.975rem;
+    font-weight: 400;
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  /* Se quita el triángulo por defecto de Chrome y Safari para poner el nuestro,
+     que gira al abrir. */
+  .pregunta summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .pregunta summary:hover {
+    color: var(--acento-texto);
+  }
+
+  .pregunta__flecha {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--acento-texto);
+    transition: transform 0.25s var(--ease);
+  }
+
+  .pregunta[open] .pregunta__flecha {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pregunta__flecha {
+      transition: none;
+    }
+  }
+
+  .pregunta p {
+    padding-bottom: 22px;
+    font-size: 0.906rem;
+    line-height: 1.7;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+
+  @media (max-width: 860px) {
+    .preguntas__rejilla {
+      grid-template-columns: 1fr;
+    }
+
+    .preguntas__alto {
+      position: static;
+    }
+  }
+</style>

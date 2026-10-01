@@ -1,0 +1,157 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { marca, contacto } from '../data/spa';
+
+const titulo = `Aviso de privacidad | ${marca.nombre}`;
+const descripcion = `Cómo trata ${marca.nombre} los datos personales de quienes reservan una cita.`;
+
+/* PLANTILLA DE DEMOSTRACIÓN. Sirve para que el enlace del formulario no quede
+   roto y para dejar apuntado qué hay que cubrir. No es asesoría legal: antes de
+   publicar, que lo revise quien corresponda y se ajuste al tratamiento real de
+   datos del negocio. */
+const secciones = [
+  {
+    titulo: 'Quién es responsable de tus datos',
+    parrafos: [
+      `${marca.nombre}, con domicilio en ${contacto.calle}, ${contacto.colonia}, ${contacto.cp}, es responsable del tratamiento de los datos personales que nos dejas al reservar una cita.`,
+      `Para cualquier asunto relacionado con este aviso puedes escribir a ${contacto.correo} o llamar al ${contacto.telefono}.`,
+    ],
+  },
+  {
+    titulo: 'Qué datos pedimos',
+    parrafos: [
+      'Al reservar te pedimos tu nombre y un teléfono. El correo y las notas sobre el tratamiento son opcionales.',
+      'Nunca te pedimos datos de tarjeta: ni número, ni fecha de vencimiento, ni código de seguridad. Este sitio no tiene forma de cobrarte con tarjeta.',
+      'Las notas del tratamiento pueden incluir información de salud que tú decidas contarnos (un embarazo, una alergia, una lesión). Solo la usamos para atenderte con seguridad, la ve únicamente el personal que te atiende, y puedes dejar ese campo vacío.',
+    ],
+  },
+  {
+    titulo: 'El comprobante del anticipo',
+    parrafos: [
+      'Algunos tratamientos piden anticipo por transferencia para apartar la cabina. En ese caso te pedimos que subas la captura de tu comprobante, y con ella recibimos lo que esa imagen muestre: normalmente el banco, el monto, la fecha y una clave de rastreo.',
+      'La usamos para una sola cosa: identificar tu depósito y confirmar tu cita. No la compartimos con nadie más.',
+      'El archivo se guarda en un almacenamiento privado al que solo entra el personal de la casa con su cuenta. No queda en una dirección pública ni se puede encontrar por internet. Lo conservamos el tiempo que marca la ley para comprobantes de pago y después se elimina.',
+      'Si prefieres no subir nada, mándanos el comprobante por WhatsApp o enséñalo en la casa, y nosotros registramos el anticipo a mano.',
+    ],
+  },
+  {
+    titulo: 'Para qué los usamos',
+    parrafos: [
+      'Únicamente para apartar tu lugar en la agenda, confirmarte la cita, recordártela y avisarte si surge un cambio de última hora.',
+      'No los usamos para publicidad ni los compartimos, vendemos o cedemos a terceros. El único tercero que interviene es el proveedor de la base de datos donde vive la agenda, por cuenta nuestra.',
+    ],
+  },
+  {
+    titulo: 'Cuánto tiempo los conservamos',
+    parrafos: [
+      'Conservamos el registro de tus citas mientras seas clienta y hasta dos años después de tu última visita, para poder consultar tu historial si vuelves.',
+      'Pasado ese plazo, los datos se eliminan.',
+    ],
+  },
+  {
+    titulo: 'Tus derechos',
+    parrafos: [
+      'Puedes pedirnos en cualquier momento acceder a tus datos, corregirlos, cancelarlos u oponerte a que los usemos, así como revocar el consentimiento que nos diste.',
+      `Basta con escribir a ${contacto.correo} indicando qué quieres hacer. Te respondemos en un máximo de veinte días hábiles.`,
+    ],
+  },
+  {
+    titulo: 'Cambios a este aviso',
+    parrafos: [
+      'Si cambiamos la forma en que tratamos los datos, publicaremos la versión actualizada en esta misma página con la fecha de la última modificación.',
+    ],
+  },
+];
+---
+
+<Base titulo={titulo} descripcion={descripcion} indexable={false}>
+  <SiteHeader />
+
+  <main id="contenido" class="legal seccion">
+    <div class="envoltura">
+      <div class="legal__cabeza">
+        <h1>Aviso de privacidad</h1>
+        <p class="entrada">
+          Qué datos te pedimos cuando reservas, para qué los usamos y cómo puedes pedirnos que
+          los borremos.
+        </p>
+        <p class="legal__demo">
+          Este texto es una plantilla de demostración y no constituye asesoría legal. Antes de
+          publicar el sitio, revísalo y ajústalo al tratamiento real de datos del negocio.
+        </p>
+      </div>
+
+      <div class="legal__cuerpo">
+        {
+          secciones.map((s) => (
+            <section>
+              <h2>{s.titulo}</h2>
+              {s.parrafos.map((p) => (
+                <p>{p}</p>
+              ))}
+            </section>
+          ))
+        }
+      </div>
+
+      <a class="enlace legal__volver" href="/">Volver al inicio</a>
+    </div>
+  </main>
+
+  <SiteFooter />
+</Base>
+
+<style>
+  .legal {
+    padding-top: calc(var(--alto-cabecera) + clamp(30px, 3.5vw, 54px));
+  }
+
+  .legal__cabeza {
+    max-width: 46rem;
+  }
+
+  .legal__cabeza .entrada {
+    margin-top: 18px;
+  }
+
+  .legal__demo {
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--acento);
+    background: var(--sup);
+    border-radius: 0 var(--r-inner) var(--r-inner) 0;
+    font-size: 0.844rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .legal__cuerpo {
+    display: grid;
+    gap: clamp(26px, 3vw, 42px);
+    max-width: 46rem;
+    margin-top: clamp(34px, 3.6vw, 56px);
+  }
+
+  .legal__cuerpo h2 {
+    font-size: clamp(1.22rem, 2vw, 1.5rem);
+    margin-bottom: 12px;
+  }
+
+  .legal__cuerpo p {
+    font-size: 0.938rem;
+    line-height: 1.72;
+    color: var(--ink-2);
+  }
+
+  .legal__cuerpo p + p {
+    margin-top: 12px;
+  }
+
+  .legal__volver {
+    display: inline-block;
+    margin-top: clamp(34px, 3.6vw, 52px);
+    font-size: 0.875rem;
+  }
+</style>

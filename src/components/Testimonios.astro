@@ -1,0 +1,102 @@
+---
+import { testimonios } from '../data/spa';
+---
+
+<!-- Familia: tres columnas separadas por regla vertical, sin tarjetas. Los
+     testimonios son texto: una caja alrededor solo mete ruido. Cada cita va a
+     tres líneas como máximo. -->
+<section class="testimonios seccion lienzo--blanco">
+  <div class="envoltura">
+    <div class="testimonios__alto revelar">
+      <p class="sobre-titulo">Lo que dicen las que ya vinieron</p>
+      <h2>Testimonios</h2>
+    </div>
+
+    <ul class="lista revelar">
+      {
+        testimonios.map((t) => (
+          <li class="cita">
+            <blockquote>
+              <p>“{t.texto}”</p>
+            </blockquote>
+            <footer>
+              <span class="cita__nombre">{t.nombre}</span>
+              <span class="cita__detalle">{t.detalle}</span>
+              <span class="cita__trat">{t.tratamiento}</span>
+            </footer>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .testimonios__alto {
+    max-width: 50ch;
+  }
+
+  .testimonios__alto h2 {
+    margin-top: 12px;
+  }
+
+  .lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0;
+    margin-top: clamp(30px, 4vw, 50px);
+    list-style: none;
+  }
+
+  .cita {
+    padding: clamp(18px, 2.2vw, 28px) clamp(20px, 2.8vw, 38px);
+    border-left: 1px solid var(--linea);
+  }
+
+  .cita:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .cita blockquote p {
+    font-size: 0.975rem;
+    line-height: 1.7;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  .cita footer {
+    display: grid;
+    gap: 2px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .cita__nombre {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.06rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+  }
+
+  .cita__detalle,
+  .cita__trat {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+
+  @media (max-width: 860px) {
+    .cita {
+      padding: 22px 0;
+      border-left: 0;
+      border-top: 1px solid var(--linea);
+    }
+
+    .cita:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+  }
+</style>

@@ -1,0 +1,85 @@
+---
+/* Marca en tipografía con una hoja simple al lado. Nombre en la serif del
+   sistema, descriptor diminuto debajo: es la estructura de logotipo de la
+   referencia y se sostiene sin ilustración. */
+import { marca } from '../data/spa';
+
+interface Props {
+  compacto?: boolean;
+}
+
+const { compacto = false } = Astro.props;
+---
+
+<span class="logo" data-compacto={String(compacto)}>
+  <svg class="logo__marca" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M12 21c0-6 2-10 7-13-1 7-3 11-7 13z"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.1"
+      stroke-linejoin="round"
+    ></path>
+    <path
+      d="M12 21c0-5-1.5-8.5-5-11 .8 5 2.2 8.5 5 11z"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.1"
+      stroke-linejoin="round"
+    ></path>
+  </svg>
+
+  <span class="logo__texto">
+    <span class="logo__nombre">{marca.nombre}</span>
+    {!compacto && <span class="logo__pie">{marca.descriptor}</span>}
+  </span>
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ink);
+  }
+
+  .logo__marca {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    color: var(--acento-texto);
+  }
+
+  .logo__texto {
+    display: grid;
+    gap: 1px;
+  }
+
+  .logo__nombre {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.24rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .logo__pie {
+    font-size: 0.563rem;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  .logo[data-compacto='true'] .logo__marca {
+    width: 22px;
+    height: 22px;
+  }
+
+  .logo[data-compacto='true'] .logo__nombre {
+    font-size: 1.1rem;
+  }
+</style>

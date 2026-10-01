@@ -1,0 +1,1232 @@
+---
+import { Icon } from 'astro-icon/components';
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import { marca } from '../data/spa';
+
+const titulo = `Panel de la casa | ${marca.nombre}`;
+const descripcion = 'Agenda interna del spa.';
+
+const RANGOS = [
+  { id: 'hoy', etiqueta: 'Hoy' },
+  { id: 'manana', etiqueta: 'Mañana' },
+  { id: 'semana', etiqueta: '7 días' },
+  { id: 'todas', etiqueta: 'Todas' },
+  { id: 'historial', etiqueta: 'Historial' },
+];
+---
+
+<Base titulo={titulo} descripcion={descripcion} indexable={false}>
+  <div class="panel-app">
+    <header class="barra-alta">
+      <div class="envoltura barra-alta__caja">
+        <a href="/" class="barra-alta__marca"><Logo compacto /></a>
+        <div class="barra-alta__sesion" id="panel-sesion" hidden>
+          <span id="panel-correo"></span>
+          <button class="btn btn--sm btn--linea" type="button" id="panel-salir">
+            <Icon name="ph:sign-out" aria-hidden="true" />
+            Salir
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="contenido" class="envoltura panel-app__cuerpo">
+      <!-- ------------------------------ Entrada ------------------------------ -->
+      <section class="entrada-panel" id="entrada" hidden>
+        <div class="entrada-panel__caja lienzo--blanco">
+          <h1>Agenda de la casa</h1>
+          <p class="micro" id="entrada-texto"></p>
+
+          <form id="form-entrada" novalidate>
+            <div class="campo" id="campo-correo">
+              <label for="e-correo">Correo</label>
+              <input type="email" id="e-correo" autocomplete="username" required />
+            </div>
+            <div class="campo">
+              <label for="e-clave">Contraseña</label>
+              <input type="password" id="e-clave" autocomplete="current-password" required />
+            </div>
+            <p class="aviso" data-tono="error" id="entrada-error" hidden></p>
+            <button class="btn btn--full btn--lg" type="submit" id="entrada-enviar">Entrar</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ------------------------------- Agenda ------------------------------ -->
+      <section class="agenda" id="agenda" hidden>
+        <div class="agenda__alto">
+          <div>
+            <h1 id="agenda-titulo">Citas de hoy</h1>
+            <p class="micro" id="agenda-fecha"></p>
+          </div>
+          <button class="btn btn--sm btn--linea" type="button" id="agenda-refrescar">
+            <Icon name="ph:arrows-clockwise" aria-hidden="true" />
+            Actualizar
+          </button>
+        </div>
+
+        <dl class="tablero">
+          <div class="ficha">
+            <dt>Sin confirmar</dt>
+            <dd id="t-pendientes">-</dd>
+          </div>
+          <div class="ficha">
+            <dt>Confirmadas</dt>
+            <dd id="t-confirmadas">-</dd>
+          </div>
+          <div class="ficha" id="t-anticipos-ficha">
+            <dt>Anticipos por revisar</dt>
+            <dd id="t-anticipos">-</dd>
+          </div>
+          <!-- La ficha que ningún otro sistema de agenda enseña: cuántos
+               minutos de cabina quedaron partidos en huecos que ya no se pueden
+               vender. Es el número que el motor existe para mantener en cero. -->
+          <div class="ficha" id="t-muerto-ficha">
+            <dt>Tiempo muerto hoy</dt>
+            <dd id="t-muerto">-</dd>
+          </div>
+          <div class="ficha">
+            <dt>Ingreso previsto</dt>
+            <dd id="t-dinero">-</dd>
+          </div>
+        </dl>
+
+        <div class="filtros">
+          <div class="filtros__grupo" role="group" aria-label="Rango de fechas">
+            {
+              RANGOS.map((r, i) => (
+                <button class="filtro" type="button" data-rango={r.id} aria-pressed={i === 0 ? 'true' : 'false'}>
+                  {r.etiqueta}
+                </button>
+              ))
+            }
+          </div>
+
+          <label class="casilla filtros__casilla">
+            <input type="checkbox" id="solo-anticipos" />
+            <span>Solo anticipos por revisar</span>
+          </label>
+        </div>
+
+        <div class="lista" id="lista" aria-live="polite">
+          <p class="lista__estado">Cargando…</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Iconos que el panel inserta desde JS: se declaran una vez y se
+         referencian con <use>, en vez de rehacer el SVG en cada fila. -->
+    <svg width="0" height="0" class="simbolos" aria-hidden="true" focusable="false">
+      <symbol id="i-check" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M232.49 80.49l-128 128a12 12 0 01-17 0l-56-56a12 12 0 0117-17L96 183l119.51-119.5a12 12 0 0117 17z"></path>
+      </symbol>
+      <symbol id="i-check-circle" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M128 24a104 104 0 10104 104A104.11 104.11 0 00128 24zm45.66 85.66l-56 56a8 8 0 01-11.32 0l-24-24a8 8 0 0111.32-11.32L112 148.69l50.34-50.35a8 8 0 0111.32 11.32z"></path>
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M208.49 191.51a12 12 0 01-17 17L128 145l-63.51 63.52a12 12 0 01-17-17L111 128 47.51 64.49a12 12 0 0117-17L128 111l63.51-63.52a12 12 0 0117 17L145 128z"></path>
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M128 24a104 104 0 10104 104A104.11 104.11 0 00128 24zm0 192a88 88 0 1188-88 88.1 88.1 0 01-88 88zm45.66-85.66a8 8 0 010 11.32 8 8 0 01-11.32 0l-40-40A8 8 0 01120 96V56a8 8 0 0116 0v36.69z"></path>
+      </symbol>
+      <symbol id="i-eye" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M247.31 124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57 61.26 162.88 48 128 48S61.43 61.26 36.34 86.35C17.51 105.18 9 124 8.69 124.76a8 8 0 000 6.5c.35.79 8.82 19.57 27.65 38.4C61.43 194.74 93.12 208 128 208s66.57-13.26 91.66-38.34c18.83-18.83 27.3-37.61 27.65-38.4a8 8 0 000-6.5M128 192c-30.78 0-57.67-11.19-79.93-33.25A133.5 133.5 0 0125 128a133.3 133.3 0 0123.07-30.75C70.33 75.19 97.22 64 128 64s57.67 11.19 79.93 33.25A133.5 133.5 0 01231.05 128c-7.21 13.46-38.62 64-103.05 64m0-112a48 48 0 1048 48a48.05 48.05 0 00-48-48m0 80a32 32 0 1132-32a32 32 0 01-32 32"></path>
+      </symbol>
+      <symbol id="i-receipt" viewBox="0 0 256 256">
+        <path fill="currentColor" d="M72 104a8 8 0 018-8h96a8 8 0 010 16H80a8 8 0 01-8-8m8 40h96a8 8 0 000-16H80a8 8 0 000 16m152-88v152a8 8 0 01-11.58 7.15L192 200.94l-28.42 14.21a8 8 0 01-7.16 0L128 200.94l-28.42 14.21a8 8 0 01-7.16 0L64 200.94l-28.42 14.21A8 8 0 0124 208V56a16 16 0 0116-16h176a16 16 0 0116 16m-16 0H40v139.06l20.42-10.22a8 8 0 017.16 0L96 199.06l28.42-14.22a8 8 0 017.16 0L160 199.06l28.42-14.22a8 8 0 017.16 0L216 195.06Z"></path>
+      </symbol>
+    </svg>
+  </div>
+</Base>
+
+<script>
+  import {
+    listarCitas,
+    cargarAgenda,
+    cambiarEstado,
+    verificarPago,
+    urlComprobante,
+    nombreComprobante,
+    tiempoRestante,
+    tiempoMuertoDelDia,
+    entrar,
+    salir,
+    sesionActual,
+    ahoraEnCasa,
+    sumarDias,
+    fechaLegible,
+    horaLegible,
+    HAY_SUPABASE,
+    CLAVE_DEMO_PANEL,
+    type Cita,
+    type EstadoCita,
+    type EstadoPago,
+  } from '../lib/reservas';
+  import { contacto } from '../data/spa';
+
+  const entrada = document.getElementById('entrada')!;
+  const agenda = document.getElementById('agenda')!;
+  const cajaSesion = document.getElementById('panel-sesion')!;
+  const lista = document.getElementById('lista')!;
+
+  const dinero = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  const ETIQUETAS: Record<EstadoCita, string> = {
+    pendiente: 'Sin confirmar',
+    confirmada: 'Confirmada',
+    completada: 'Atendida',
+    cancelada: 'Cancelada',
+  };
+
+  const ETIQUETAS_PAGO: Record<EstadoPago, string> = {
+    no_requiere: 'Paga en la casa',
+    esperando: 'Esperando anticipo',
+    en_revision: 'Comprobante por revisar',
+    verificado: 'Anticipo verificado',
+    rechazado: 'Comprobante rechazado',
+  };
+
+  const TRANSICIONES: Record<EstadoCita, EstadoCita[]> = {
+    pendiente: ['confirmada', 'cancelada'],
+    confirmada: ['completada', 'cancelada'],
+    completada: [],
+    cancelada: ['pendiente'],
+  };
+
+  const ICONOS: Record<EstadoCita, string> = {
+    pendiente: 'clock',
+    confirmada: 'check',
+    completada: 'check-circle',
+    cancelada: 'x',
+  };
+
+  const TITULOS: Record<EstadoCita, string> = {
+    pendiente: 'Devolver a sin confirmar',
+    confirmada: 'Confirmar la cita',
+    completada: 'Marcar como atendida',
+    cancelada: 'Cancelar la cita',
+  };
+
+  function esperaRevision(c: Cita) {
+    return c.estado !== 'cancelada' && c.pago_estado === 'en_revision';
+  }
+
+  /* Mientras el anticipo no esté resuelto, la cita no se confirma "a mano": se
+     confirma verificando el pago. Si el panel ofreciera el botón genérico,
+     quedaría una cita confirmada con el anticipo todavía en revisión. */
+  function pagoSinResolver(c: Cita) {
+    return c.anticipo > 0 && ['esperando', 'en_revision', 'rechazado'].includes(c.pago_estado);
+  }
+
+  function transicionesDe(c: Cita): EstadoCita[] {
+    const base = TRANSICIONES[c.estado];
+    if (c.estado === 'pendiente' && pagoSinResolver(c)) {
+      return base.filter((e) => e !== 'confirmada');
+    }
+    return base;
+  }
+
+  let rango = 'hoy';
+  let soloAnticipos = false;
+
+  /* ------------------------------- Entrada -------------------------------- */
+
+  const textoEntrada = document.getElementById('entrada-texto')!;
+  const campoCorreo = document.getElementById('campo-correo')!;
+  const errorEntrada = document.getElementById('entrada-error')!;
+
+  if (HAY_SUPABASE) {
+    textoEntrada.textContent =
+      'Entra con la cuenta de Supabase que diste de alta para el personal de la casa.';
+  } else {
+    // Sin Supabase no hay usuarios que validar. Se dice de frente en vez de
+    // fingir un inicio de sesión que no protege nada.
+    campoCorreo.hidden = true;
+    (document.getElementById('e-correo') as HTMLInputElement).required = false;
+    textoEntrada.textContent = `Modo demostración: las citas se guardan solo en este navegador. La contraseña es ${CLAVE_DEMO_PANEL}.`;
+  }
+
+  document.getElementById('form-entrada')!.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    errorEntrada.hidden = true;
+    const boton = document.getElementById('entrada-enviar') as HTMLButtonElement;
+    const correo = (document.getElementById('e-correo') as HTMLInputElement).value;
+    const clave = (document.getElementById('e-clave') as HTMLInputElement).value;
+
+    boton.disabled = true;
+    try {
+      await entrar(correo, clave);
+      await arrancar();
+    } catch (error) {
+      errorEntrada.textContent = error instanceof Error ? error.message : 'No pudimos entrar.';
+      errorEntrada.hidden = false;
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  document.getElementById('panel-salir')!.addEventListener('click', async () => {
+    await salir();
+    location.reload();
+  });
+
+  /* -------------------------------- Rangos -------------------------------- */
+
+  function limites() {
+    const hoy = ahoraEnCasa().fecha;
+    switch (rango) {
+      case 'manana':
+        return { desde: sumarDias(hoy, 1), hasta: sumarDias(hoy, 1), titulo: 'Citas de mañana' };
+      case 'semana':
+        return { desde: hoy, hasta: sumarDias(hoy, 6), titulo: 'Próximos 7 días' };
+      case 'todas':
+        return { desde: hoy, hasta: sumarDias(hoy, 90), titulo: 'Todas las citas próximas' };
+      case 'historial':
+        return { desde: sumarDias(hoy, -30), hasta: sumarDias(hoy, -1), titulo: 'Últimos 30 días' };
+      default:
+        return { desde: hoy, hasta: hoy, titulo: 'Citas de hoy' };
+    }
+  }
+
+  /* -------------------------------- Pintado ------------------------------- */
+
+  function filaDeCita(cita: Cita) {
+    const fila = document.createElement('article');
+    fila.className = 'cita-fila';
+    fila.dataset.estado = cita.estado;
+
+    const hora = document.createElement('p');
+    hora.className = 'cita-fila__hora';
+    hora.textContent = horaLegible(cita.hora);
+    const duracion = document.createElement('span');
+    duracion.className = 'cita-fila__duracion';
+    // El buffer se enseña aparte: es tiempo de cabina que la casa sí gasta,
+    // aunque la clienta no esté dentro.
+    duracion.textContent = `${cita.duracion_min} min + ${cita.buffer_min} de limpieza`;
+    hora.append(duracion);
+
+    const cliente = document.createElement('div');
+    cliente.className = 'cita-fila__cliente';
+    const nombre = document.createElement('strong');
+    nombre.textContent = cita.cliente_nombre;
+    cliente.append(nombre);
+
+    const contactoCaja = document.createElement('div');
+    contactoCaja.className = 'cita-fila__contacto';
+
+    const tel = document.createElement('a');
+    tel.href = `tel:${cita.cliente_telefono.replace(/\s/g, '')}`;
+    tel.textContent = cita.cliente_telefono;
+    contactoCaja.append(tel);
+
+    const wa = document.createElement('a');
+    const digitos = cita.cliente_telefono.replace(/\D/g, '');
+    wa.href = `https://wa.me/${digitos.length > 10 ? digitos : '52' + digitos}?text=${encodeURIComponent(
+      `Hola ${cita.cliente_nombre.split(' ')[0]}, te escribimos de Casa Vapor para confirmar tu cita del ${fechaLegible(cita.fecha)} a las ${horaLegible(cita.hora)}.`
+    )}`;
+    wa.target = '_blank';
+    wa.rel = 'noopener';
+    wa.textContent = 'WhatsApp';
+    contactoCaja.append(wa);
+
+    if (cita.cliente_correo) {
+      const correo = document.createElement('a');
+      correo.href = `mailto:${cita.cliente_correo}`;
+      correo.textContent = cita.cliente_correo;
+      contactoCaja.append(correo);
+    }
+    cliente.append(contactoCaja);
+
+    const trat = document.createElement('div');
+    trat.className = 'cita-fila__trat';
+    trat.textContent = `${cita.tratamiento_nombre} · ${dinero.format(cita.precio)}`;
+    const cabina = document.createElement('span');
+    cabina.className = 'cita-fila__cabina';
+    cabina.textContent = `Cabina ${cita.cabina_nombre}`;
+    trat.append(cabina);
+
+    const lado = document.createElement('div');
+    lado.className = 'cita-fila__lado';
+
+    const folio = document.createElement('span');
+    folio.className = 'cita-fila__folio';
+    folio.textContent = cita.folio;
+
+    const insignia = document.createElement('span');
+    insignia.className = 'insignia';
+    insignia.dataset.estado = cita.estado;
+    insignia.textContent = ETIQUETAS[cita.estado];
+
+    const acciones = document.createElement('div');
+    acciones.className = 'acciones';
+
+    transicionesDe(cita).forEach((destino) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'accion';
+      b.dataset.accion = destino;
+      b.title = TITULOS[destino];
+      b.setAttribute('aria-label', `${TITULOS[destino]} de ${cita.cliente_nombre}`);
+      b.innerHTML = `<svg width="15" height="15" aria-hidden="true"><use href="#i-${ICONOS[destino]}"></use></svg>`;
+
+      b.addEventListener('click', async () => {
+        // Cancelar libera la cabina y se le avisa a la clienta: conviene que sea
+        // un acto deliberado, no un clic de más.
+        if (destino === 'cancelada') {
+          const seguro = confirm(
+            `¿Cancelar la cita de ${cita.cliente_nombre} del ${fechaLegible(cita.fecha)} a las ${horaLegible(cita.hora)}?`
+          );
+          if (!seguro) return;
+        }
+        acciones.querySelectorAll('button').forEach((x) => (x.disabled = true));
+        try {
+          await cambiarEstado(cita.id, destino);
+          await refrescar();
+        } catch {
+          alert('No pudimos guardar el cambio. Revisa tu conexión y vuelve a intentarlo.');
+          acciones.querySelectorAll('button').forEach((x) => (x.disabled = false));
+        }
+      });
+
+      acciones.append(b);
+    });
+
+    lado.append(folio, insignia, acciones);
+    fila.append(hora, cliente, trat, lado);
+
+    if (cita.notas) {
+      const notas = document.createElement('p');
+      notas.className = 'cita-fila__notas';
+      notas.textContent = `“${cita.notas}”`;
+      fila.append(notas);
+    }
+
+    const pago = bloquePago(cita);
+    if (pago) fila.append(pago);
+
+    return fila;
+  }
+
+  /* --------------------------- Anticipos ---------------------------------- */
+
+  function bloquePago(cita: Cita): HTMLElement | null {
+    if (cita.anticipo <= 0) return null;
+
+    const caja = document.createElement('div');
+    caja.className = 'pago';
+    caja.dataset.pago = cita.pago_estado;
+
+    const cabeza = document.createElement('div');
+    cabeza.className = 'pago__cabeza';
+    const icono = document.createElement('span');
+    icono.className = 'pago__icono';
+    icono.innerHTML = '<svg width="15" height="15" aria-hidden="true"><use href="#i-receipt"></use></svg>';
+    const etiqueta = document.createElement('strong');
+    etiqueta.textContent = `${ETIQUETAS_PAGO[cita.pago_estado]} · ${dinero.format(cita.anticipo)}`;
+    cabeza.append(icono, etiqueta);
+
+    if (cita.pago_estado === 'esperando' || cita.pago_estado === 'rechazado') {
+      const falta = tiempoRestante(cita.vence_en);
+      const plazo = document.createElement('span');
+      plazo.className = 'pago__plazo';
+      plazo.textContent = falta ? `se libera en ${falta}` : 'plazo agotado';
+      plazo.dataset.agotado = String(!falta);
+      cabeza.append(plazo);
+    }
+    caja.append(cabeza);
+
+    if (cita.pago_nota) {
+      const nota = document.createElement('p');
+      nota.className = 'pago__nota';
+      nota.textContent = cita.pago_nota;
+      caja.append(nota);
+    }
+
+    if (!cita.pago_comprobante) return caja;
+
+    const acciones = document.createElement('div');
+    acciones.className = 'pago__acciones';
+
+    /* Ver el comprobante abre una vista dentro de la propia fila. No se abre en
+       otra pestaña a propósito: en modo demo la captura es un data URL y los
+       navegadores bloquean navegar a esos; y aun con URL firmada, revisar sin
+       perder el sitio en la lista es más rápido. */
+    const vista = document.createElement('div');
+    vista.className = 'pago__vista';
+    vista.hidden = true;
+
+    const ver = document.createElement('button');
+    ver.type = 'button';
+    ver.className = 'pago__boton';
+    ver.innerHTML =
+      '<svg width="14" height="14" aria-hidden="true"><use href="#i-eye"></use></svg><span>Ver comprobante</span>';
+    ver.setAttribute('aria-expanded', 'false');
+
+    let cargado = false;
+    ver.addEventListener('click', async () => {
+      if (!vista.hidden) {
+        vista.hidden = true;
+        ver.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      vista.hidden = false;
+      ver.setAttribute('aria-expanded', 'true');
+      if (cargado) return;
+
+      vista.textContent = 'Abriendo…';
+      const url = await urlComprobante(cita.pago_comprobante);
+      vista.replaceChildren();
+      cargado = true;
+
+      if (!url) {
+        const sin = document.createElement('p');
+        sin.className = 'pago__sin-vista';
+        sin.textContent = HAY_SUPABASE
+          ? 'No pudimos abrir el archivo. Revisa que el bucket «comprobantes» exista en Supabase.'
+          : `Modo demostración: solo se guardó el nombre del archivo (${nombreComprobante(cita.pago_comprobante)}). Con Supabase conectado se vería la captura completa.`;
+        vista.append(sin);
+        return;
+      }
+
+      const esPdf =
+        /\.pdf$/i.test(cita.pago_comprobante ?? '') || url.startsWith('data:application/pdf');
+      if (esPdf) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.className = 'pago__boton';
+        a.textContent = 'Abrir el PDF del comprobante';
+        vista.append(a);
+        return;
+      }
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Comprobante de la cita ${cita.folio}`;
+      img.loading = 'lazy';
+      vista.append(img);
+    });
+
+    acciones.append(ver);
+
+    if (cita.pago_estado === 'en_revision' || cita.pago_estado === 'rechazado') {
+      const aprobar = document.createElement('button');
+      aprobar.type = 'button';
+      aprobar.className = 'pago__boton pago__boton--ok';
+      aprobar.innerHTML =
+        '<svg width="14" height="14" aria-hidden="true"><use href="#i-check"></use></svg><span>Verificar y confirmar</span>';
+
+      const rechazar = document.createElement('button');
+      rechazar.type = 'button';
+      rechazar.className = 'pago__boton pago__boton--no';
+      rechazar.innerHTML =
+        '<svg width="14" height="14" aria-hidden="true"><use href="#i-x"></use></svg><span>Rechazar</span>';
+
+      const bloquear = (activo: boolean) => {
+        aprobar.disabled = activo;
+        rechazar.disabled = activo;
+      };
+
+      aprobar.addEventListener('click', async () => {
+        bloquear(true);
+        try {
+          await verificarPago(cita.id, true);
+          await refrescar();
+        } catch {
+          alert('No pudimos registrar la verificación. Revisa tu conexión.');
+          bloquear(false);
+        }
+      });
+
+      rechazar.addEventListener('click', async () => {
+        // El motivo le llega a la clienta, así que conviene escribirlo.
+        const motivo = prompt(
+          `¿Por qué se rechaza el anticipo de ${cita.cliente_nombre}?\n\nLo va a ver y podrá mandar otro comprobante.`,
+          'No pudimos identificar la transferencia.'
+        );
+        if (motivo === null) return;
+        bloquear(true);
+        try {
+          await verificarPago(cita.id, false, motivo);
+          await refrescar();
+        } catch {
+          alert('No pudimos registrar el rechazo. Revisa tu conexión.');
+          bloquear(false);
+        }
+      });
+
+      acciones.append(aprobar, rechazar);
+    }
+
+    caja.append(acciones, vista);
+    return caja;
+  }
+
+  function pintar(citas: Cita[]) {
+    lista.replaceChildren();
+
+    const visibles = soloAnticipos ? citas.filter(esperaRevision) : citas;
+    const vivas = citas.filter((c) => c.estado !== 'cancelada');
+
+    const porRevisar = citas.filter(esperaRevision).length;
+    document.getElementById('t-anticipos')!.textContent = String(porRevisar);
+    document.getElementById('t-anticipos-ficha')!.dataset.urgente = String(porRevisar > 0);
+
+    document.getElementById('t-pendientes')!.textContent = String(
+      citas.filter((c) => c.estado === 'pendiente').length
+    );
+    document.getElementById('t-confirmadas')!.textContent = String(
+      citas.filter((c) => c.estado === 'confirmada').length
+    );
+    document.getElementById('t-dinero')!.textContent = dinero.format(
+      vivas.reduce((s, c) => s + c.precio, 0)
+    );
+
+    if (visibles.length === 0) {
+      const vacio = document.createElement('p');
+      vacio.className = 'lista__estado';
+      vacio.textContent = soloAnticipos
+        ? 'No hay comprobantes esperando revisión en este rango.'
+        : 'No hay citas en este rango. Cuando alguien reserve, aparecerá aquí.';
+      lista.append(vacio);
+      return;
+    }
+
+    // Agrupadas por día: así se lee como la libreta de la recepción.
+    const porDia = new Map<string, Cita[]>();
+    visibles.forEach((c) => {
+      if (!porDia.has(c.fecha)) porDia.set(c.fecha, []);
+      porDia.get(c.fecha)!.push(c);
+    });
+
+    for (const [fecha, delDia] of porDia) {
+      const grupo = document.createElement('section');
+      grupo.className = 'dia-grupo';
+
+      const titulo = document.createElement('h2');
+      titulo.className = 'dia-grupo__titulo';
+      titulo.textContent = fechaLegible(fecha);
+      const cuenta = document.createElement('span');
+      cuenta.className = 'dia-grupo__cuenta';
+      cuenta.textContent = `${delDia.length} ${delDia.length === 1 ? 'cita' : 'citas'}`;
+      titulo.append(cuenta);
+
+      const filas = document.createElement('div');
+      filas.className = 'dia-grupo__lista';
+      delDia.forEach((c) => filas.append(filaDeCita(c)));
+
+      grupo.append(titulo, filas);
+      lista.append(grupo);
+    }
+  }
+
+  /* El tiempo muerto se calcula sobre la agenda real del día, no sobre la lista
+     filtrada: es una propiedad de la jornada, no del filtro que esté puesto. */
+  async function pintarTiempoMuerto() {
+    const hoy = ahoraEnCasa().fecha;
+    const nodo = document.getElementById('t-muerto')!;
+    const ficha = document.getElementById('t-muerto-ficha')!;
+    try {
+      const ag = await cargarAgenda(hoy, hoy);
+      const min = tiempoMuertoDelDia(ag, hoy);
+      nodo.textContent = min === 0 ? '0 min' : `${min} min`;
+      ficha.dataset.urgente = String(min > 0);
+    } catch {
+      nodo.textContent = '-';
+      delete ficha.dataset.urgente;
+    }
+  }
+
+  async function refrescar() {
+    const { desde, hasta, titulo } = limites();
+    document.getElementById('agenda-titulo')!.textContent = titulo;
+    const hoyLegible = fechaLegible(ahoraEnCasa().fecha);
+    document.getElementById('agenda-fecha')!.textContent =
+      hoyLegible.charAt(0).toUpperCase() + hoyLegible.slice(1);
+
+    try {
+      pintar(await listarCitas(desde, hasta));
+    } catch {
+      lista.replaceChildren();
+      const fallo = document.createElement('p');
+      fallo.className = 'lista__estado';
+      fallo.textContent = `No pudimos cargar la agenda. Revisa la conexión o llama al ${contacto.telefono}.`;
+      lista.append(fallo);
+    }
+
+    await pintarTiempoMuerto();
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-rango]').forEach((b) => {
+    b.addEventListener('click', () => {
+      rango = b.dataset.rango!;
+      document
+        .querySelectorAll<HTMLButtonElement>('[data-rango]')
+        .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      refrescar();
+    });
+  });
+
+  (document.getElementById('solo-anticipos') as HTMLInputElement).addEventListener(
+    'change',
+    (evento) => {
+      soloAnticipos = (evento.target as HTMLInputElement).checked;
+      refrescar();
+    }
+  );
+
+  document.getElementById('agenda-refrescar')!.addEventListener('click', refrescar);
+
+  /* ------------------------------- Arranque -------------------------------- */
+
+  async function arrancar() {
+    const sesion = await sesionActual();
+    if (!sesion) {
+      entrada.hidden = false;
+      agenda.hidden = true;
+      cajaSesion.hidden = true;
+      return;
+    }
+    entrada.hidden = true;
+    agenda.hidden = false;
+    cajaSesion.hidden = false;
+    document.getElementById('panel-correo')!.textContent = sesion.correo;
+    await refrescar();
+  }
+
+  arrancar();
+</script>
+
+<style>
+  .panel-app {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .barra-alta {
+    border-bottom: 1px solid var(--linea);
+    background: var(--hueso);
+  }
+
+  .barra-alta__caja {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 64px;
+  }
+
+  .barra-alta__marca {
+    text-decoration: none;
+  }
+
+  .barra-alta__sesion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.813rem;
+    color: var(--ink-3);
+  }
+
+  .panel-app__cuerpo {
+    flex: 1;
+    padding-block: clamp(28px, 4vw, 52px);
+  }
+
+  /* ------------------------------- Entrada -------------------------------- */
+
+  .entrada-panel {
+    display: grid;
+    place-items: center;
+    min-height: 60svh;
+  }
+
+  .entrada-panel__caja {
+    width: 100%;
+    max-width: 380px;
+    padding: clamp(24px, 3vw, 34px);
+    border-radius: var(--r-sup);
+    box-shadow: var(--sombra-lg);
+  }
+
+  .entrada-panel__caja h1 {
+    font-size: 1.5rem;
+  }
+
+  .entrada-panel__caja .micro {
+    margin-top: 10px;
+  }
+
+  .entrada-panel__caja form {
+    display: grid;
+    gap: 14px;
+    margin-top: 22px;
+  }
+
+  /* -------------------------------- Agenda -------------------------------- */
+
+  .agenda__alto {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .agenda__alto h1 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+  }
+
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: clamp(20px, 2.4vw, 30px);
+  }
+
+  .ficha {
+    padding: 15px 17px;
+    border: 1px solid var(--linea);
+    border-radius: var(--r-sup);
+    background: var(--blanco);
+  }
+
+  .ficha dt {
+    font-size: 0.688rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .ficha dd {
+    margin-top: 7px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Las dos fichas sobre las que hay que ACTUAR se encienden. En cero se quedan
+     calladas, para que el color signifique algo cuando aparece. */
+  .ficha[data-urgente='true'] {
+    border-color: var(--alerta);
+    background: var(--alerta-tenue);
+  }
+
+  .ficha[data-urgente='true'] dd {
+    color: var(--alerta);
+  }
+
+  #t-muerto-ficha:not([data-urgente='true']) dd {
+    color: var(--ok);
+  }
+
+  /* -------------------------------- Filtros ------------------------------- */
+
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: clamp(22px, 2.6vw, 32px);
+  }
+
+  .filtros__grupo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .filtro {
+    padding: 7px 15px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 0.813rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color 0.2s var(--ease),
+      color 0.2s var(--ease);
+  }
+
+  .filtro:hover {
+    color: var(--ink);
+    border-color: var(--acento-texto);
+  }
+
+  .filtro[aria-pressed='true'] {
+    background: var(--acento-fondo);
+    border-color: var(--acento-fondo);
+    color: var(--hueso);
+  }
+
+  .filtros__casilla {
+    font-size: 0.813rem;
+  }
+
+  .lista {
+    margin-top: clamp(20px, 2.4vw, 28px);
+  }
+</style>
+
+<!-- Las clases que crea el JavaScript necesitan is:global: en el bloque normal
+     Astro las descarta por no encontrarlas en el marcado. -->
+<style is:global>
+  #lista .lista__estado {
+    padding: 28px 0;
+    font-size: 0.875rem;
+    color: var(--ink-3);
+  }
+
+  #lista .dia-grupo + .dia-grupo {
+    margin-top: 26px;
+  }
+
+  #lista .dia-grupo__titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.813rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--linea);
+  }
+
+  #lista .dia-grupo__cuenta {
+    font-size: 0.719rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  #lista .dia-grupo__lista {
+    display: grid;
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  #lista .cita-fila {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1.1fr) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    padding: 15px 17px;
+    border-radius: var(--r-sup);
+    background: var(--blanco);
+    /* Franja de color a la izquierda: deja ver el estado de toda la agenda sin
+       leer una sola insignia. */
+    border-left: 3px solid var(--ink-3);
+  }
+
+  #lista .cita-fila[data-estado='confirmada'] {
+    border-left-color: var(--ok);
+  }
+  #lista .cita-fila[data-estado='completada'] {
+    border-left-color: var(--linea-fuerte);
+  }
+  #lista .cita-fila[data-estado='cancelada'] {
+    border-left-color: var(--alerta);
+    opacity: 0.6;
+  }
+
+  #lista .cita-fila__hora {
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #lista .cita-fila__duracion {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.719rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--ink-3);
+  }
+
+  #lista .cita-fila__cliente strong {
+    font-size: 0.906rem;
+    color: var(--ink);
+  }
+
+  #lista .cita-fila__contacto {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  #lista .cita-fila__contacto a {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+    text-decoration: none;
+    border-bottom: 1px solid var(--linea);
+  }
+
+  #lista .cita-fila__contacto a:hover {
+    color: var(--acento-texto);
+  }
+
+  #lista .cita-fila__trat {
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+
+  #lista .cita-fila__cabina {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+
+  #lista .cita-fila__notas {
+    grid-column: 2 / -1;
+    margin-top: 4px;
+    padding: 9px 12px;
+    border-radius: var(--r-inner);
+    background: var(--sup-2);
+    font-size: 0.781rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+
+  #lista .cita-fila__lado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: end;
+  }
+
+  #lista .cita-fila__folio {
+    font-size: 0.688rem;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #lista .insignia {
+    padding: 5px 11px;
+    border-radius: var(--r-pill);
+    font-size: 0.688rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--sup-2);
+    color: var(--ink-2);
+  }
+
+  #lista .insignia[data-estado='confirmada'] {
+    background: var(--ok-tenue);
+    color: var(--ok);
+  }
+
+  #lista .insignia[data-estado='cancelada'] {
+    background: var(--alerta-tenue);
+    color: var(--alerta);
+  }
+
+  #lista .acciones {
+    display: flex;
+    gap: 6px;
+  }
+
+  #lista .accion {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      border-color 0.2s var(--ease),
+      color 0.2s var(--ease);
+  }
+
+  #lista .accion:hover:not(:disabled) {
+    border-color: var(--acento-texto);
+    color: var(--acento-texto);
+  }
+
+  #lista .accion:disabled {
+    opacity: 0.45;
+    cursor: progress;
+  }
+
+  #lista .accion[data-accion='cancelada']:hover {
+    border-color: var(--alerta);
+    color: var(--alerta);
+  }
+
+  /* ------------------------------- Anticipos ------------------------------- */
+
+  #lista .pago {
+    grid-column: 2 / -1;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: var(--r-inner);
+    border-left: 2px solid var(--ink-3);
+    background: var(--sup-2);
+  }
+
+  #lista .pago[data-pago='en_revision'],
+  #lista .pago[data-pago='rechazado'] {
+    border-left-color: var(--alerta);
+  }
+
+  #lista .pago[data-pago='verificado'] {
+    border-left-color: var(--ok);
+  }
+
+  #lista .pago__cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #lista .pago__icono {
+    display: inline-flex;
+    color: var(--ink-3);
+  }
+
+  #lista .pago__cabeza strong {
+    font-size: 0.781rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  #lista .pago[data-pago='en_revision'] .pago__cabeza strong {
+    color: var(--alerta);
+  }
+
+  #lista .pago[data-pago='verificado'] .pago__cabeza strong {
+    color: var(--ok);
+  }
+
+  #lista .pago__plazo {
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    background: var(--sup-2);
+    font-size: 0.688rem;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #lista .pago__plazo[data-agotado='true'] {
+    background: var(--alerta-tenue);
+    color: var(--alerta);
+    font-weight: 600;
+  }
+
+  #lista .pago__nota {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  #lista .pago__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  #lista .pago__boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.719rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      border-color 0.2s var(--ease),
+      background 0.2s var(--ease);
+  }
+
+  #lista .pago__boton:hover:not(:disabled) {
+    border-color: var(--acento-texto);
+    background: var(--sup-2);
+  }
+
+  #lista .pago__boton:disabled {
+    opacity: 0.5;
+    cursor: progress;
+  }
+
+  #lista .pago__boton--ok {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  #lista .pago__boton--no {
+    border-color: var(--alerta);
+    color: var(--alerta);
+  }
+
+  #lista .pago__vista {
+    margin-top: 10px;
+  }
+
+  /* Tope de altura: un comprobante de banco es alto y estrecho, y sin límite
+     empuja el resto de la agenda fuera de la pantalla. */
+  #lista .pago__vista img {
+    display: block;
+    max-width: min(100%, 320px);
+    max-height: 420px;
+    width: auto;
+    border-radius: var(--r-inner);
+    border: 1px solid var(--linea);
+    background: var(--hueso);
+  }
+
+  #lista .pago__sin-vista {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 940px) {
+    #lista .cita-fila {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    #lista .cita-fila__lado {
+      justify-self: start;
+      flex-wrap: wrap;
+    }
+
+    #lista .cita-fila__notas,
+    #lista .pago {
+      grid-column: 1;
+    }
+  }
+</style>

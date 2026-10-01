@@ -1,0 +1,2 @@
+Carpeta para iconos SVG propios del proyecto. astro-icon la busca siempre y
+avisa en el build si no existe; se deja creada aunque esté vacía.

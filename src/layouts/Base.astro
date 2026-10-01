@@ -1,0 +1,120 @@
+---
+import '../styles/global.css';
+import { marca, contacto } from '../data/spa';
+
+interface Props {
+  titulo: string;
+  descripcion: string;
+  indexable?: boolean;
+}
+
+const { titulo, descripcion, indexable = true } = Astro.props;
+const canonica = new URL(Astro.url.pathname, Astro.site ?? 'https://www.casavapor.mx').href;
+
+/* Datos estructurados. `DaySpa` es el tipo correcto de schema.org para esto;
+   usar `LocalBusiness` a secas desperdicia la precisión que Google sí lee. */
+const datos = {
+  '@context': 'https://schema.org',
+  '@type': 'DaySpa',
+  name: marca.nombre,
+  description: marca.claim,
+  url: canonica,
+  telephone: contacto.telefono,
+  email: contacto.correo,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: contacto.calle,
+    addressLocality: 'Guadalajara',
+    addressRegion: 'Jalisco',
+    postalCode: '44160',
+    addressCountry: 'MX',
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '11:00',
+      closes: '21:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: 'Saturday',
+      opens: '10:00',
+      closes: '20:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: 'Sunday',
+      opens: '11:00',
+      closes: '17:00',
+    },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="es-MX" class="sin-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <link rel="canonical" href={canonica} />
+    {!indexable && <meta name="robots" content="noindex, nofollow" />}
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <!-- Las dos familias, subset latin. latin-ext entra solo si el texto lo
+         necesita, y eso casi nunca pasa en español. -->
+    <link rel="preload" href="/fonts/cormorant-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonica} />
+    <meta property="og:site_name" content={marca.nombre} />
+    <meta property="og:locale" content="es_MX" />
+    <meta name="theme-color" content="#faf8f5" />
+
+    <script type="application/ld+json" set:html={JSON.stringify(datos)} />
+  </head>
+
+  <body>
+    <a class="salto" href="#contenido">Saltar al contenido</a>
+    <slot />
+
+    <script>
+      /* Quita la clase que mantiene todo visible sin JavaScript. A partir de
+         aquí el revelado lo controla el observador. */
+      document.documentElement.classList.remove('sin-js');
+
+      /* Revelado al entrar en viewport.
+
+         IntersectionObserver, nunca un listener de scroll: ese corre en cada
+         frame, no se agrupa y se atora en móvil.
+
+         Con movimiento reducido no se observa nada y todo queda visible: la
+         animación no es requisito para que el contenido exista. */
+      const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const objetivos = document.querySelectorAll('.revelar');
+
+      if (reducido || !('IntersectionObserver' in window)) {
+        objetivos.forEach((el) => el.setAttribute('data-visible', 'true'));
+      } else {
+        const observador = new IntersectionObserver(
+          (entradas) => {
+            for (const entrada of entradas) {
+              if (!entrada.isIntersecting) continue;
+              entrada.target.setAttribute('data-visible', 'true');
+              observador.unobserve(entrada.target);
+            }
+          },
+          { rootMargin: '0px 0px -12% 0px', threshold: 0.08 }
+        );
+
+        objetivos.forEach((el) => observador.observe(el));
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Hero from '../components/Hero.astro';
+import Cifras from '../components/Cifras.astro';
+import Tratamientos from '../components/Tratamientos.astro';
+import Ventajas from '../components/Ventajas.astro';
+import Reserva from '../components/Reserva.astro';
+import Cabinas from '../components/Cabinas.astro';
+import Casa from '../components/Casa.astro';
+import Testimonios from '../components/Testimonios.astro';
+import Preguntas from '../components/Preguntas.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import BarraMovil from '../components/BarraMovil.astro';
+import { marca } from '../data/spa';
+
+const titulo = `${marca.nombre} | Spa en la Colonia Americana, Guadalajara`;
+const descripcion =
+  'Spa de tarde en Guadalajara. Faciales, masajes y ritual de vapor y arcilla. Reserva tu cabina en línea y elige la hora que de verdad queda libre.';
+---
+
+<Base titulo={titulo} descripcion={descripcion}>
+  <SiteHeader />
+
+  <main>
+    <!-- Nueve secciones, nueve familias de composición. Ninguna se repite:
+
+           Hero          foto a sangre con el texto encima
+           Cifras        franja de cuatro datos en panel blanco
+           Tratamientos  riel horizontal con scroll-snap
+           Ventajas      rejilla 2x2 de tarjetas con icono
+           Reserva       bloque de color con panel dentro
+           Cabinas       una grande y dos apiladas
+           Casa          bloque partido con la foto al borde
+           Testimonios   tres columnas con regla, sin cajas
+           Preguntas     acordeón
+
+         El orden de las dos nuevas no es decorativo. Cifras cose el héroe con
+         el catálogo, que antes se tocaban en seco. Ventajas va PEGADA a la
+         reserva: el formulario pide nombre, teléfono y a veces una
+         transferencia, y llegaba sin haber dado un motivo para confiar. -->
+    <Hero />
+    <Cifras />
+    <Tratamientos />
+    <Ventajas />
+    <Reserva />
+    <hr class="costura" />
+    <Cabinas />
+    <Casa />
+    <Testimonios />
+    <hr class="costura" />
+    <Preguntas />
+  </main>
+
+  <SiteFooter />
+  <BarraMovil />
+</Base>

@@ -1,0 +1,156 @@
+---
+import { cifras } from '../data/spa';
+---
+
+<!-- Familia: franja de cuatro cifras en un panel blanco sobre el lienzo.
+
+     Existe porque entre el héroe y los tratamientos había un salto en seco:
+     se pasaba de la foto grande a un riel de tarjetas sin nada que explicara
+     qué clase de sitio es este. Son cuatro datos duros y ninguno inventado;
+     de dónde sale cada uno está anotado en `cifras` dentro de spa.ts.
+
+     El panel sube sobre el héroe para coser las dos secciones. Es el único
+     solape de la página: repetirlo lo convertiría en un tic. -->
+<section class="cifras lienzo--hueso" aria-label="La casa en cuatro datos">
+  <div class="envoltura">
+    <dl class="cifras__panel tarjeta revelar">
+      {
+        cifras.map((c) => (
+          <div class="cifras__dato">
+            <dt class="cifras__valor cifra-serif">{c.valor}</dt>
+            <dd class="cifras__etiqueta">{c.etiqueta}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>
+
+<style>
+  .cifras {
+    position: relative;
+    z-index: 1;
+    /* El panel sube sobre la foto del héroe. El padding de abajo es el de una
+       sección normal menos lo que ya subió. */
+    margin-top: clamp(-44px, -4vw, -32px);
+    padding-bottom: clamp(50px, 6vw, 86px);
+    background: transparent;
+  }
+
+  .cifras__panel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(18px, 2.4vw, 40px);
+    padding: clamp(26px, 3.2vw, 40px) clamp(24px, 3.4vw, 46px);
+    box-shadow: var(--sombra-md);
+  }
+
+  /* Regla fina entre columnas, no cuatro cajitas. Cuatro tarjetas dentro de
+     una tarjeta sería una caja dentro de otra por nada. */
+  .cifras__dato + .cifras__dato {
+    padding-left: clamp(18px, 2.4vw, 40px);
+    border-left: 1px solid var(--linea);
+  }
+
+  /* La serif manda en los montos: es una de las cuatro cosas para las que
+     existe en este sistema. La familia y las figuras de caja alta vienen de
+     `.cifra-serif`. */
+  .cifras__valor {
+    font-size: clamp(1.7rem, 3vw, 2.5rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+
+  .cifras__etiqueta {
+    margin-top: 10px;
+    font-size: 0.813rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+
+  /* Dos y dos antes que cuatro apretadas: a cuatro columnas en móvil las
+     etiquetas se parten en cinco renglones. */
+  @media (max-width: 860px) {
+    .cifras__panel {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(20px, 4vw, 28px);
+    }
+
+    .cifras__dato:nth-child(odd) {
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    .cifras__dato:nth-child(n + 3) {
+      padding-top: clamp(20px, 4vw, 28px);
+      border-top: 1px solid var(--linea);
+    }
+  }
+
+  /* Se acaba el solape.
+
+     Subir el panel sobre la foto funciona en escritorio, donde los botones
+     del héroe ocupan media columna y queda sitio libre a su derecha. En
+     móvil los botones van a todo el ancho y el panel les cae encima: se lee
+     como un choque, no como una costura. */
+  @media (max-width: 880px) {
+    .cifras {
+      margin-top: 0;
+      padding-top: clamp(26px, 6vw, 38px);
+    }
+  }
+
+  /* Una columna, pero en renglones COMPACTOS: la cifra a la izquierda y la
+     etiqueta al lado, no debajo.
+
+     Apiladas una sobre otra, cuatro cifras ocupaban casi una pantalla entera
+     de teléfono para decir cuatro cosas cortas. De lado entran en la mitad y
+     se leen de un barrido. */
+  @media (max-width: 560px) {
+    .cifras__panel {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .cifras__dato {
+      display: grid;
+      /* La columna de la cifra es fija para que TODAS las etiquetas arranquen
+         en la misma vertical. El ancho lo manda "30 a 120", que es la más
+         larga de las cuatro: si entra esa, entran las otras tres. */
+      grid-template-columns: 7.2em 1fr;
+      align-items: baseline;
+      gap: 14px;
+      padding-block: 15px;
+    }
+
+    .cifras__dato:first-child {
+      padding-top: 0;
+    }
+
+    .cifras__dato:last-child {
+      padding-bottom: 0;
+    }
+
+    /* Una sola regla entre renglones, y ninguna arriba del primero. */
+    .cifras__dato + .cifras__dato {
+      padding-left: 0;
+      border-left: 0;
+      border-top: 1px solid var(--linea);
+    }
+
+    .cifras__dato:nth-child(n + 3) {
+      padding-top: 15px;
+    }
+
+    .cifras__valor {
+      font-size: 1.45rem;
+    }
+
+    .cifras__etiqueta {
+      margin-top: 0;
+    }
+  }
+</style>

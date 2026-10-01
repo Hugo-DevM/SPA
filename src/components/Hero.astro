@@ -1,0 +1,253 @@
+---
+import { hero, CTA_PRINCIPAL } from '../data/spa';
+---
+
+<!-- Familia: foto a sangre con el texto ENCIMA.
+
+     Es el único sitio de la página donde el fondo es oscuro, y es una
+     fotografía velada, no un bloque de color. La versión anterior ponía el
+     texto sobre crema y la foto debajo, en una banda aparte: con una foto
+     clara funcionaba, pero con una oscura la banda se leía como una franja
+     negra cruzando la página.
+
+     Cuatro elementos de texto y ni uno más: entradilla, display en dos
+     renglones, dos botones y la tarjeta de datos. Sin párrafo y sin tira
+     decorativa. -->
+<section class="hero" id="contenido">
+  <div class="hero__foto">
+    <img
+      src={hero.imagen.src}
+      alt={hero.imagen.alt}
+      width={hero.imagen.w}
+      height={hero.imagen.h}
+      fetchpriority="high"
+      decoding="async"
+    />
+  </div>
+
+  <div class="hero__rejilla envoltura">
+    <div class="hero__texto">
+      <p class="sobre-titulo revelar">{hero.sobreTitulo}</p>
+
+      <h1 class="revelar hero__titulo">
+        {hero.titulo}
+        <span>{hero.tituloAcento}</span>
+      </h1>
+
+      <div class="hero__acciones revelar">
+        <a class="btn btn--lg" href="#reservar">{CTA_PRINCIPAL}</a>
+        <a class="btn btn--lg btn--velo" href="#tratamientos">Ver tratamientos</a>
+      </div>
+    </div>
+
+    <dl class="hero__datos revelar">
+      {
+        hero.datos.map((d) => (
+          <div>
+            <dt>{d.etiqueta}</dt>
+            <dd>{d.valor}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: flex-end;
+    /* svh y no vh: en iOS la barra de direcciones hace que vh mienta y el
+       botón se va fuera de la primera pantalla. El tope evita que en un
+       monitor alto el héroe se convierta en un póster de dos metros. */
+    min-height: clamp(520px, 82svh, 760px);
+    padding-top: calc(var(--alto-cabecera) + 36px);
+    padding-bottom: clamp(32px, 4vw, 56px);
+    background: #2d1b12;
+    color: var(--hueso);
+    overflow: hidden;
+  }
+
+  .hero__foto {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+  }
+
+  .hero__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* El velo.
+
+     Va a 0.78 del lado del texto y baja a 0.30 del otro. Ese 0.78 es un
+     número medido, no un gusto: contra el peor caso posible (una foto blanca
+     en esa zona) deja el texto hueso en 7.63, AA de sobra. Importa porque
+     esta foto se va a cambiar por la del spa real y el velo tiene que
+     aguantar la que venga. */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(
+        100deg,
+        rgb(45 27 18 / 0.78) 0%,
+        rgb(45 27 18 / 0.66) 42%,
+        rgb(45 27 18 / 0.3) 100%
+      ),
+      linear-gradient(to top, rgb(45 27 18 / 0.55), transparent 58%);
+  }
+
+  /* Composición en diagonal: la tarjeta arriba a la derecha, el titular abajo
+     a la izquierda.
+
+     Las dos empezaron juntas abajo y se estorbaban: la tarjeta quedaba
+     pegada al panel de cifras que sube desde la sección siguiente, y eran
+     dos cajas apiladas peleando por el mismo rincón. Separadas, además,
+     ocupan el tercio de arriba, que si no se quedaba en foto vacía. */
+  .hero__rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    gap: clamp(24px, 4vw, 56px);
+    width: 100%;
+  }
+
+  .hero__texto {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    min-width: 0;
+  }
+
+  /* Sobre la foto la entradilla necesita más cuerpo que sobre crema: en gris
+     medio se pierde contra la imagen. */
+  .hero__texto .sobre-titulo {
+    color: rgb(250 248 245 / 0.92);
+  }
+
+  /* Escala PROPIA del héroe, más chica que el h1 global.
+
+     El h1 global llega a 4.5rem, que es correcto para un titular centrado a
+     todo el ancho. Aquí el titular comparte renglón con la tarjeta de datos y
+     a 4.5rem "DOS HORAS QUE NO" se partía en siete renglones. Un titular de
+     siete renglones no es un problema de texto largo, es un tamaño de letra
+     mal elegido: el tope baja a 3.4rem y entra en dos, que es la regla. */
+  .hero__titulo {
+    margin-top: clamp(10px, 1.4vw, 16px);
+    font-size: clamp(1.55rem, 4.4vw, 3.4rem);
+    color: var(--hueso);
+  }
+
+  /* El segundo renglón baja solo: el titular lee en dos y nunca en tres. */
+  .hero__titulo span {
+    display: block;
+  }
+
+  .hero__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: clamp(22px, 2.6vw, 32px);
+    transition-delay: 0.1s;
+  }
+
+  /* Tarjeta de datos. Cristal sobre la foto en vez de blanco sólido: un panel
+     opaco aquí tapa justo la parte de la imagen que da el ambiente. */
+  .hero__datos {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    display: grid;
+    gap: 16px;
+    padding: 20px 26px;
+    border: 1px solid rgb(250 248 245 / 0.28);
+    border-radius: var(--r-sup);
+    background: rgb(45 27 18 / 0.46);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition-delay: 0.22s;
+  }
+
+  /* Sin blur el fondo se sube a opaco: translúcido y sin desenfoque deja la
+     foto compitiendo con el texto. */
+  @supports not (backdrop-filter: blur(4px)) {
+    .hero__datos {
+      background: rgb(45 27 18 / 0.86);
+    }
+  }
+
+  .hero__datos dt {
+    font-size: 0.688rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(250 248 245 / 0.72);
+  }
+
+  .hero__datos dd {
+    margin-top: 4px;
+    font-size: 0.906rem;
+    color: var(--hueso);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Botón secundario sobre foto. El `.btn--linea` normal hereda el color del
+     lienzo y aquí el lienzo es una imagen: quedaría un contorno oscuro
+     invisible. Este lleva borde claro y un velo propio detrás. */
+  .btn--velo {
+    background: rgb(250 248 245 / 0.1);
+    border-color: rgb(250 248 245 / 0.45);
+    color: var(--hueso);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .btn--velo:hover {
+    background: rgb(250 248 245 / 0.2);
+    border-color: var(--hueso);
+    color: var(--hueso);
+  }
+
+  /* Colapso móvil: la tarjeta deja de ir al lado y pasa debajo, a todo el
+     ancho. Debajo de 560px el héroe se mide contra el contenido y no contra
+     la pantalla, para que el botón nunca quede fuera de la vista. */
+  /* Colapso: una sola columna. La tarjeta se queda arriba (fila 1) y el
+     titular debajo, que es el mismo orden de lectura del escritorio. */
+  @media (max-width: 880px) {
+    .hero__rejilla {
+      grid-template-columns: 1fr;
+      gap: clamp(28px, 6vw, 44px);
+    }
+
+    .hero__texto {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .hero__datos {
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 28px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .hero {
+      min-height: 0;
+      padding-bottom: clamp(26px, 6vw, 36px);
+    }
+
+    .hero__acciones .btn {
+      flex: 1 1 100%;
+    }
+  }
+</style>

@@ -1,0 +1,2198 @@
+---
+import { Icon } from 'astro-icon/components';
+import {
+  reserva,
+  tratamientos,
+  cabinas,
+  CABINA_INDIFERENTE,
+  contacto,
+  pago,
+  CTA_PRINCIPAL,
+} from '../data/spa';
+
+const dinero = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+---
+
+<!-- Familia: bloque de color con panel blanco dentro y lomo girado al margen.
+     Es el único sitio de la página donde hay que operar, así que es el único
+     que se levanta del lienzo con una superficie propia. -->
+<section class="reserva seccion lienzo--blush" id="reservar">
+  <div class="envoltura reserva__caja">
+    <p class="lomo reserva__lomo" aria-hidden="true">{reserva.rotulo}</p>
+
+    <div class="reserva__alto revelar">
+      <p class="sobre-titulo">{reserva.texto}</p>
+      <h2>{reserva.titulo} {reserva.tituloAcento}</h2>
+    </div>
+
+    <div class="reserva__panel lienzo--blanco revelar">
+      <form class="flujo" id="form-reserva" novalidate>
+        <!-- ------------------------------ Paso 1 ------------------------- -->
+        <fieldset class="paso">
+          <legend><span class="paso__num">1</span> Qué te hacemos</legend>
+
+          <div class="opciones opciones--tratamientos">
+            {
+              tratamientos.map((t, i) => (
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="tratamiento"
+                    value={t.slug}
+                    data-nombre={t.nombre}
+                    data-precio={t.precio}
+                    data-duracion={t.duracionMin}
+                    data-buffer={t.bufferMin}
+                    data-anticipo={t.anticipo}
+                    checked={i === 0}
+                  />
+                  <span class="opcion__caja">
+                    <span class="opcion__nombre">{t.nombre}</span>
+                    <span class="opcion__meta">
+                      <span class="opcion__precio">{dinero.format(t.precio)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{t.duracionMin} min</span>
+                    </span>
+                    {t.anticipo > 0 && (
+                      <span class="opcion__anticipo">{dinero.format(t.anticipo)} de anticipo</span>
+                    )}
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <!-- ------------------------------ Paso 2 ------------------------- -->
+        <fieldset class="paso">
+          <legend><span class="paso__num">2</span> En qué cabina</legend>
+
+          <div class="opciones opciones--cabinas">
+            <label class="opcion">
+              <input type="radio" name="cabina" value="" data-nombre={CABINA_INDIFERENTE.nombre} checked />
+              <span class="opcion__caja">
+                <span class="opcion__nombre">{CABINA_INDIFERENTE.nombre}</span>
+                <span class="opcion__nota">Te damos la que llene mejor la tarde</span>
+              </span>
+            </label>
+
+            {
+              cabinas.lista.map((c) => (
+                <label class="opcion">
+                  <input type="radio" name="cabina" value={c.slug} data-nombre={c.nombre} />
+                  <span class="opcion__caja">
+                    <span class="opcion__nombre">{c.nombre}</span>
+                    <span class="opcion__nota">{c.detalle}</span>
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <!-- ------------------------------ Paso 3 ------------------------- -->
+        <fieldset class="paso">
+          <legend><span class="paso__num">3</span> Qué día</legend>
+
+          <div class="calendario" id="calendario">
+            <div class="calendario__barra">
+              <button class="calendario__mover" type="button" id="mes-atras" aria-label="Mes anterior">
+                <Icon name="ph:caret-left" aria-hidden="true" />
+              </button>
+              <p class="calendario__titulo" id="mes-titulo" aria-live="polite"></p>
+              <button class="calendario__mover" type="button" id="mes-adelante" aria-label="Mes siguiente">
+                <Icon name="ph:caret-right" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div class="calendario__dias" aria-hidden="true">
+              {DIAS_CORTOS.map((d) => <span>{d}</span>)}
+            </div>
+
+            <div class="calendario__rejilla" id="calendario-rejilla" role="group" aria-label="Días disponibles"></div>
+          </div>
+        </fieldset>
+
+        <!-- ------------------------------ Paso 4 ------------------------- -->
+        <fieldset class="paso">
+          <legend><span class="paso__num">4</span> A qué hora</legend>
+          <div class="horarios" id="horarios"></div>
+        </fieldset>
+
+        <!-- ------------------------------ Paso 5 ------------------------- -->
+        <fieldset class="paso">
+          <legend><span class="paso__num">5</span> Tus datos</legend>
+
+          <div class="campos">
+            <div class="campo">
+              <label for="r-nombre">Nombre</label>
+              <input type="text" id="r-nombre" name="nombre" autocomplete="name" placeholder="Renata Vilchis" required aria-describedby="r-nombre-error" />
+              <p class="campo__error" id="r-nombre-error" data-error hidden>
+                <Icon name="ph:warning-circle" aria-hidden="true" />
+                <span></span>
+              </p>
+            </div>
+
+            <div class="campo">
+              <label for="r-telefono">Teléfono</label>
+              <input type="tel" id="r-telefono" name="telefono" autocomplete="tel" inputmode="tel" placeholder="33 1234 5678" required aria-describedby="r-telefono-error" />
+              <p class="campo__error" id="r-telefono-error" data-error hidden>
+                <Icon name="ph:warning-circle" aria-hidden="true" />
+                <span></span>
+              </p>
+            </div>
+
+            <div class="campo">
+              <label for="r-correo">
+                Correo
+                <span class="campo__opcional">Opcional</span>
+              </label>
+              <input type="email" id="r-correo" name="correo" autocomplete="email" placeholder="renata@correo.com" aria-describedby="r-correo-error" />
+              <p class="campo__error" id="r-correo-error" data-error hidden>
+                <Icon name="ph:warning-circle" aria-hidden="true" />
+                <span></span>
+              </p>
+            </div>
+
+            <div class="campo campo--ancho">
+              <label for="r-notas">
+                Algo que debamos saber
+                <span class="campo__opcional">Opcional</span>
+              </label>
+              <textarea id="r-notas" name="notas" rows="2" maxlength="280" placeholder="Estoy embarazada, tengo la piel sensible, vengo con mi hermana…"></textarea>
+            </div>
+
+            <div class="campo campo--ancho">
+              <label class="casilla" for="r-aviso">
+                <input type="checkbox" id="r-aviso" name="aviso" required aria-describedby="r-aviso-error" />
+                <span>
+                  Acepto que la casa use mi teléfono para confirmarme y recordarme la cita,
+                  según el <a class="enlace" href="/aviso-de-privacidad">aviso de privacidad</a>.
+                </span>
+              </label>
+              <p class="campo__error" id="r-aviso-error" data-error hidden>
+                <Icon name="ph:warning-circle" aria-hidden="true" />
+                <span></span>
+              </p>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- ------------------------------ Resumen ------------------------ -->
+        <aside class="resumen lienzo--taupe" aria-label="Resumen de tu cita">
+          <p class="resumen__titulo">Tu cita</p>
+
+          <dl class="resumen__lista">
+            <div>
+              <dt>Tratamiento</dt>
+              <dd id="res-tratamiento">-</dd>
+            </div>
+            <div>
+              <dt>Cabina</dt>
+              <dd id="res-cabina">-</dd>
+            </div>
+            <div>
+              <dt>Día</dt>
+              <dd id="res-dia">Sin elegir</dd>
+            </div>
+            <div>
+              <dt>Hora</dt>
+              <dd id="res-hora">Sin elegir</dd>
+            </div>
+          </dl>
+
+          <div class="resumen__total">
+            <span>Total</span>
+            <strong id="res-total">-</strong>
+          </div>
+
+          <div class="resumen__anticipo" id="res-anticipo-caja" hidden>
+            <span>Anticipo para apartar</span>
+            <strong id="res-anticipo">-</strong>
+            <small id="res-resta">-</small>
+          </div>
+
+          <p class="resumen__nota">
+            <Icon name="ph:check-circle" aria-hidden="true" />
+            <span id="res-nota">La cabina queda apartada en cuanto confirmas.</span>
+          </p>
+        </aside>
+
+        <div class="enviar">
+          <button class="btn btn--lg" type="submit" id="enviar-reserva">
+            <span class="enviar__texto">{CTA_PRINCIPAL}</span>
+            <Icon name="ph:circle-notch" class="giro" aria-hidden="true" />
+          </button>
+          <p class="enviar__nota">
+            <Icon name="ph:lock-simple" aria-hidden="true" />
+            <span id="enviar-nota">No pedimos tarjeta. Pagas en la casa.</span>
+          </p>
+        </div>
+
+        <p class="aviso" id="reserva-aviso" role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <!-- --------------------------- Confirmación --------------------------- -->
+      <div class="confirmada" id="confirmada" hidden>
+        <div class="confirmada__sello" aria-hidden="true">
+          <Icon name="ph:check" />
+        </div>
+
+        <h3 id="conf-titulo">Listo, tu cabina está apartada</h3>
+        <p class="confirmada__folio">Folio <strong id="conf-folio">-</strong></p>
+
+        <dl class="confirmada__lista">
+          <div>
+            <dt>Tratamiento</dt>
+            <dd id="conf-tratamiento">-</dd>
+          </div>
+          <div>
+            <dt>Cabina</dt>
+            <dd id="conf-cabina">-</dd>
+          </div>
+          <div>
+            <dt>Cuándo</dt>
+            <dd id="conf-cuando">-</dd>
+          </div>
+          <div>
+            <dt>Dónde</dt>
+            <dd>{contacto.calle}, {contacto.colonia}</dd>
+          </div>
+        </dl>
+
+        <p class="confirmada__texto" id="conf-texto"></p>
+
+        <!-- ------------------------ Anticipo por SPEI ---------------------- -->
+        <section class="anticipo lienzo--blush" id="anticipo" hidden aria-labelledby="anticipo-titulo">
+          <div class="anticipo__cabeza">
+            <Icon name="ph:hourglass-high" aria-hidden="true" />
+            <h4 id="anticipo-titulo">{pago.titulo}</h4>
+          </div>
+
+          <p class="anticipo__texto">{pago.texto}</p>
+          <p class="anticipo__reloj" id="anticipo-reloj" role="status" aria-live="polite"></p>
+
+          <dl class="anticipo__datos">
+            <div>
+              <dt>Monto a transferir</dt>
+              <dd class="anticipo__monto" id="anticipo-monto">-</dd>
+            </div>
+            <div>
+              <dt>Banco</dt>
+              <dd>{pago.banco}</dd>
+            </div>
+            <div>
+              <dt>Titular</dt>
+              <dd>{pago.titular}</dd>
+            </div>
+            <div>
+              <dt>CLABE</dt>
+              <dd class="anticipo__copiable">
+                <span class="anticipo__dato">{pago.clabe}</span>
+                <button class="anticipo__copiar" type="button" data-copiar={pago.clabePlana}>
+                  <Icon name="ph:copy" aria-hidden="true" />
+                  <span>Copiar</span>
+                </button>
+              </dd>
+            </div>
+            <div>
+              <dt>Concepto o referencia</dt>
+              <dd class="anticipo__copiable">
+                <span class="anticipo__dato" id="anticipo-folio">-</span>
+                <button class="anticipo__copiar" type="button" id="copiar-folio">
+                  <Icon name="ph:copy" aria-hidden="true" />
+                  <span>Copiar</span>
+                </button>
+              </dd>
+            </div>
+          </dl>
+
+          <ol class="anticipo__pasos">
+            {pago.instrucciones.map((p) => <li>{p}</li>)}
+          </ol>
+
+          <form class="anticipo__subida" id="form-comprobante" novalidate>
+            <label class="anticipo__etiqueta" for="comprobante">
+              Captura del comprobante
+              <span class="anticipo__formatos">
+                JPG, PNG, WEBP, HEIC o PDF · hasta {pago.pesoMaximoMb} MB
+              </span>
+            </label>
+            <input type="file" id="comprobante" name="comprobante" accept={pago.formatos.join(',')} />
+            <button class="btn" type="submit" id="comprobante-enviar">
+              <span class="comprobante__texto">Enviar comprobante</span>
+              <Icon name="ph:circle-notch" class="giro" aria-hidden="true" />
+            </button>
+          </form>
+
+          <div class="anticipo__listo" id="anticipo-listo" hidden>
+            <Icon name="ph:check-circle" aria-hidden="true" />
+            <div>
+              <strong>Recibimos tu comprobante</strong>
+              <p>
+                Tu cabina ya no se libera. Lo revisamos y te confirmamos por WhatsApp; si algo
+                no cuadra te escribimos al teléfono que nos dejaste.
+              </p>
+            </div>
+          </div>
+
+          <p class="anticipo__aviso">
+            <Icon name="ph:warning-circle" aria-hidden="true" />
+            {pago.aviso}
+          </p>
+
+          <p class="aviso" id="comprobante-aviso" role="status" aria-live="polite" hidden></p>
+        </section>
+
+        <div class="confirmada__botones">
+          <a class="btn btn--linea" id="conf-calendario" href="#" download="cita-casa-vapor.ics">
+            <Icon name="ph:calendar-check" aria-hidden="true" />
+            Añadir a mi calendario
+          </a>
+          <a class="btn btn--linea" id="conf-whatsapp" href="#" target="_blank" rel="noopener">
+            <Icon name="ph:whatsapp-logo" aria-hidden="true" />
+            Escribirnos
+          </a>
+          <button class="confirmada__otra" type="button" id="conf-otra">Agendar otra cita</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import {
+    cargarAgenda,
+    reservar,
+    subirComprobante,
+    huecosDelDia,
+    diaTieneHuecos,
+    ahoraEnCasa,
+    instanteUtc,
+    fechaLegible,
+    horaLegible,
+    partesFecha,
+    aFecha,
+    diaSemana,
+    diasEnMes,
+    sumarDias,
+    tiempoRestante,
+    MINIMO_VENDIBLE,
+    ErrorReserva,
+    HAY_SUPABASE,
+    type Agenda,
+    type EstadoPago,
+  } from '../lib/reservas';
+  import { reserva, contacto, marca, pago, tratamientos as catalogo } from '../data/spa';
+
+  const formulario = document.getElementById('form-reserva') as HTMLFormElement | null;
+  if (formulario) iniciar(formulario);
+
+  function iniciar(formulario: HTMLFormElement) {
+    /* ------------------------------- Estado ------------------------------- */
+
+    const hoy = ahoraEnCasa().fecha;
+    const ultimoDia = sumarDias(hoy, reserva.diasDeAntelacion);
+
+    let agenda: Agenda | null = null;
+    let mesVisible = { anio: partesFecha(hoy).anio, mes: partesFecha(hoy).mes };
+    let diaElegido: string | null = null;
+    let horaElegida: string | null = null;
+    let citaEnCurso: { folio: string; telefono: string } | null = null;
+    let relojAnticipo: number | null = null;
+    let urlCalendario: string | null = null;
+
+    const dinero = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+
+    const nombreMes = new Intl.DateTimeFormat('es-MX', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+
+    /* -------------------------------- Nodos ------------------------------- */
+
+    const rejilla = document.getElementById('calendario-rejilla')!;
+    const tituloMes = document.getElementById('mes-titulo')!;
+    const atras = document.getElementById('mes-atras') as HTMLButtonElement;
+    const adelante = document.getElementById('mes-adelante') as HTMLButtonElement;
+    const cajaHorarios = document.getElementById('horarios')!;
+    const aviso = document.getElementById('reserva-aviso')!;
+    const boton = document.getElementById('enviar-reserva') as HTMLButtonElement;
+    const confirmada = document.getElementById('confirmada')!;
+    const cajaAnticipo = document.getElementById('anticipo')!;
+    const formComprobante = document.getElementById('form-comprobante') as HTMLFormElement;
+    const campoComprobante = document.getElementById('comprobante') as HTMLInputElement;
+    const botonComprobante = document.getElementById('comprobante-enviar') as HTMLButtonElement;
+    const avisoComprobante = document.getElementById('comprobante-aviso')!;
+    const listoAnticipo = document.getElementById('anticipo-listo')!;
+    const relojTexto = document.getElementById('anticipo-reloj')!;
+
+    const resumen = {
+      tratamiento: document.getElementById('res-tratamiento')!,
+      cabina: document.getElementById('res-cabina')!,
+      dia: document.getElementById('res-dia')!,
+      hora: document.getElementById('res-hora')!,
+      total: document.getElementById('res-total')!,
+      anticipoCaja: document.getElementById('res-anticipo-caja')!,
+      anticipo: document.getElementById('res-anticipo')!,
+      resta: document.getElementById('res-resta')!,
+      nota: document.getElementById('res-nota')!,
+      notaEnviar: document.getElementById('enviar-nota')!,
+    };
+
+    function tratamientoElegido() {
+      const radio = formulario.querySelector<HTMLInputElement>('input[name="tratamiento"]:checked')!;
+      return {
+        slug: radio.value,
+        nombre: radio.dataset.nombre!,
+        precio: Number(radio.dataset.precio),
+        duracionMin: Number(radio.dataset.duracion),
+        bufferMin: Number(radio.dataset.buffer),
+        anticipo: Number(radio.dataset.anticipo ?? 0),
+      };
+    }
+
+    function cabinaElegida() {
+      const radio = formulario.querySelector<HTMLInputElement>('input[name="cabina"]:checked')!;
+      return { slug: radio.value || null, nombre: radio.dataset.nombre! };
+    }
+
+    /* ------------------------------ Calendario ---------------------------- */
+
+    /* Primer día con lugar dentro de la ventana de agenda, o null.
+
+       Hace falta por un caso que parece raro y pasa todos los meses: si hoy es
+       el día 30 y el tratamiento ya no cabe hoy, el mes visible se queda SIN un
+       solo día disponible. Sin esto el calendario enseñaría un mes entero
+       apagado y nadie sabría que hay lugar pasando de mes. */
+    function primerDiaConHueco(trat: { duracionMin: number; bufferMin: number }, cabSlug: string | null) {
+      if (!agenda) return null;
+      let fecha = hoy;
+      while (fecha <= ultimoDia) {
+        if (diaTieneHuecos(agenda, fecha, trat, cabSlug)) return fecha;
+        fecha = sumarDias(fecha, 1);
+      }
+      return null;
+    }
+
+    function pintarCalendario() {
+      const { anio, mes } = mesVisible;
+      const etiqueta = nombreMes.format(new Date(Date.UTC(anio, mes - 1, 1)));
+      tituloMes.textContent = etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
+
+      const primero = aFecha(anio, mes, 1);
+      const ultimo = aFecha(anio, mes, diasEnMes(anio, mes));
+      atras.disabled = primero <= hoy;
+      adelante.disabled = ultimo >= ultimoDia;
+
+      rejilla.replaceChildren();
+
+      if (!agenda) {
+        const cargando = document.createElement('p');
+        cargando.className = 'calendario__cargando';
+        cargando.textContent = 'Buscando lugares…';
+        rejilla.append(cargando);
+        return;
+      }
+
+      const trat = tratamientoElegido();
+      const cab = cabinaElegida();
+      let hayAlgunoEsteMes = false;
+
+      // La rejilla empieza en lunes; diaSemana() devuelve 0 para domingo.
+      const desfase = (diaSemana(primero) + 6) % 7;
+      for (let i = 0; i < desfase; i += 1) {
+        const hueco = document.createElement('span');
+        hueco.className = 'dia dia--hueco';
+        rejilla.append(hueco);
+      }
+
+      for (let numero = 1; numero <= diasEnMes(anio, mes); numero += 1) {
+        const fecha = aFecha(anio, mes, numero);
+        const celda = document.createElement('button');
+        celda.type = 'button';
+        celda.className = 'dia';
+        celda.textContent = String(numero);
+        celda.dataset.fecha = fecha;
+
+        const dentro = fecha >= hoy && fecha <= ultimoDia;
+        const libre = dentro && diaTieneHuecos(agenda, fecha, trat, cab.slug);
+
+        if (!libre) {
+          celda.disabled = true;
+          celda.setAttribute(
+            'aria-label',
+            `${fechaLegible(fecha)}, sin lugar para ${trat.nombre}`
+          );
+        } else {
+          hayAlgunoEsteMes = true;
+          celda.classList.add('dia--libre');
+          celda.setAttribute('aria-label', fechaLegible(fecha));
+          celda.addEventListener('click', () => elegirDia(fecha));
+        }
+
+        if (fecha === diaElegido) {
+          celda.classList.add('dia--elegido');
+          celda.setAttribute('aria-current', 'date');
+        }
+
+        rejilla.append(celda);
+      }
+
+      /* Mes sin un solo día disponible. En vez de dejar la rejilla apagada y
+         que la clienta crea que no hay lugar nunca, se le dice dónde sí hay y
+         se le da el salto en un clic. */
+      if (!hayAlgunoEsteMes) {
+        const siguiente = primerDiaConHueco(trat, cab.slug);
+        const aviso = document.createElement('p');
+        aviso.className = 'calendario__sin-mes';
+
+        if (!siguiente) {
+          aviso.textContent = `No queda lugar para ${trat.nombre} en los próximos ${reserva.diasDeAntelacion} días. Escríbenos por WhatsApp y lo acomodamos a mano.`;
+        } else {
+          const { anio: a2, mes: m2 } = partesFecha(siguiente);
+          const etiquetaSig = nombreMes.format(new Date(Date.UTC(a2, m2 - 1, 1)));
+          aviso.textContent = `Este mes ya no hay lugar para ${trat.nombre}. `;
+
+          const salto = document.createElement('button');
+          salto.type = 'button';
+          salto.className = 'calendario__salto';
+          salto.textContent = `Ver ${etiquetaSig.toLowerCase()}`;
+          salto.addEventListener('click', () => {
+            mesVisible = { anio: a2, mes: m2 };
+            pintarCalendario();
+          });
+
+          aviso.append(salto);
+        }
+
+        rejilla.append(aviso);
+      }
+    }
+
+    function elegirDia(fecha: string) {
+      diaElegido = fecha;
+      horaElegida = null;
+      pintarCalendario();
+      pintarHorarios();
+      actualizarResumen();
+    }
+
+    /* ------------------------------- Horarios ------------------------------
+       Aquí se ve el trabajo del motor. Las horas se parten en dos grupos:
+
+         - Las que llenan apretado, incluidas las ANCLADAS al minuto en que la
+           cabina queda libre. Estas van primero y son el camino por defecto.
+         - Las que dejarían un espacio por debajo del tratamiento más corto.
+           Van aparte, en "otros horarios", visibles pero no destacadas.
+
+       No se esconden: si a la clienta solo le queda a esa hora, esconderla
+       cuesta una venta. Pero el camino fácil es el que llena mejor la tarde. */
+
+    function pintarHorarios() {
+      cajaHorarios.replaceChildren();
+
+      if (!agenda || !diaElegido) {
+        const vacio = document.createElement('p');
+        vacio.className = 'horarios__vacio';
+        vacio.textContent = 'Elige un día y te enseñamos las horas que quedan.';
+        cajaHorarios.append(vacio);
+        return;
+      }
+
+      const trat = tratamientoElegido();
+      const cab = cabinaElegida();
+      const huecos = huecosDelDia(agenda, diaElegido, trat, cab.slug);
+
+      if (huecos.length === 0) {
+        const nada = document.createElement('p');
+        nada.className = 'horarios__vacio';
+        nada.textContent = 'Ese día no abrimos. Elige otro.';
+        cajaHorarios.append(nada);
+        return;
+      }
+
+      const apretados = huecos.filter((h) => h.libres === 0 || !h.dejaHueco);
+      const sueltos = huecos.filter((h) => h.libres > 0 && h.dejaHueco);
+
+      const chip = (h: (typeof huecos)[number]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'hora';
+        b.textContent = horaLegible(h.hora);
+        b.dataset.hora = h.hora;
+
+        if (h.libres === 0) {
+          b.disabled = true;
+          b.setAttribute('aria-label', `${horaLegible(h.hora)}, ya reservado`);
+          b.title = 'Ya reservado';
+        } else {
+          b.setAttribute('aria-pressed', String(h.hora === horaElegida));
+          if (h.anclado) {
+            b.dataset.anclado = 'true';
+            b.title = 'Justo cuando queda libre la cabina';
+          }
+          b.addEventListener('click', () => {
+            horaElegida = h.hora;
+            pintarHorarios();
+            actualizarResumen();
+          });
+        }
+
+        if (h.hora === horaElegida) b.classList.add('hora--elegida');
+        return b;
+      };
+
+      const grupo = document.createElement('div');
+      grupo.className = 'horarios__rejilla';
+      apretados.forEach((h) => grupo.append(chip(h)));
+      cajaHorarios.append(grupo);
+
+      const libres = huecos.filter((h) => h.libres > 0).length;
+      const pie = document.createElement('p');
+      pie.className = 'horarios__pie';
+      pie.textContent = `${libres} de ${huecos.length} horas libres para ${trat.duracionMin} minutos.`;
+      cajaHorarios.append(pie);
+
+      if (sueltos.length > 0) {
+        const detalle = document.createElement('details');
+        detalle.className = 'horarios__otros';
+
+        const resumenEl = document.createElement('summary');
+        resumenEl.textContent = `Otros ${sueltos.length} horarios`;
+        detalle.append(resumenEl);
+
+        const nota = document.createElement('p');
+        nota.className = 'horarios__nota';
+        nota.textContent =
+          `A estas horas sí te podemos atender, pero dejan un hueco de menos de ${MINIMO_VENDIBLE} minutos que ya no alcanza para nadie más. Si te queda mejor una de estas, tómala sin problema.`;
+        detalle.append(nota);
+
+        const rejillaOtros = document.createElement('div');
+        rejillaOtros.className = 'horarios__rejilla';
+        sueltos.forEach((h) => rejillaOtros.append(chip(h)));
+        detalle.append(rejillaOtros);
+
+        cajaHorarios.append(detalle);
+      }
+    }
+
+    /* ------------------------------- Resumen ------------------------------ */
+
+    function actualizarResumen() {
+      const trat = tratamientoElegido();
+      const cab = cabinaElegida();
+
+      resumen.tratamiento.textContent = `${trat.nombre} · ${trat.duracionMin} min`;
+      resumen.cabina.textContent = cab.nombre;
+      resumen.total.textContent = dinero.format(trat.precio);
+
+      const conAnticipo = trat.anticipo > 0;
+      resumen.anticipoCaja.hidden = !conAnticipo;
+
+      if (conAnticipo) {
+        resumen.anticipo.textContent = dinero.format(trat.anticipo);
+        resumen.resta.textContent = `Pagas ${dinero.format(trat.precio - trat.anticipo)} el día de tu cita`;
+        resumen.nota.textContent = `La cabina se aparta ${pago.plazoHoras} horas mientras llega tu transferencia.`;
+        resumen.notaEnviar.textContent = 'Sin tarjeta: el anticipo va por transferencia, sin comisión.';
+      } else {
+        resumen.nota.textContent = 'La cabina queda apartada en cuanto confirmas.';
+        resumen.notaEnviar.textContent = 'No pedimos tarjeta. Pagas en la casa.';
+      }
+
+      resumen.dia.textContent = diaElegido ? fechaLegible(diaElegido) : 'Sin elegir';
+      resumen.dia.dataset.vacio = String(!diaElegido);
+      resumen.hora.textContent = horaElegida ? horaLegible(horaElegida) : 'Sin elegir';
+      resumen.hora.dataset.vacio = String(!horaElegida);
+    }
+
+    /* -------------------------- Carga de la agenda ------------------------ */
+
+    let ultimaCarga = 0;
+    let primeraCarga = true;
+
+    async function traerAgenda() {
+      try {
+        agenda = await cargarAgenda(hoy, ultimoDia);
+        ultimaCarga = Date.now();
+      } catch {
+        mostrarAviso(
+          'error',
+          `No pudimos cargar la agenda. Recarga la página o llámanos al ${contacto.telefono}.`
+        );
+        agenda = { horarios: [], cabinas: [], ocupados: [], bloqueos: [] };
+      }
+
+      /* En la primera carga se abre el calendario en el mes donde de verdad hay
+         lugar. Si hoy es fin de mes y ya no cabe nada, abrir en el mes actual
+         sería recibir a la clienta con una rejilla entera apagada. */
+      if (primeraCarga && agenda) {
+        primeraCarga = false;
+        const trat = tratamientoElegido();
+        const cab = cabinaElegida();
+        const primero = primerDiaConHueco(trat, cab.slug);
+        if (primero) {
+          const { anio, mes } = partesFecha(primero);
+          mesVisible = { anio, mes };
+        }
+      }
+
+      pintarCalendario();
+      pintarHorarios();
+    }
+
+    /* Si alguien deja la pestaña abierta y vuelve, la agenda que tiene en
+       pantalla puede estar mintiendo. Se vuelve a pedir al recuperar el foco. */
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - ultimaCarga < 60_000) return;
+      await traerAgenda();
+      if (diaElegido && horaElegida && agenda) {
+        const trat = tratamientoElegido();
+        const cab = cabinaElegida();
+        const sigue = huecosDelDia(agenda, diaElegido, trat, cab.slug).some(
+          (h) => h.hora === horaElegida && h.libres > 0
+        );
+        if (!sigue) {
+          horaElegida = null;
+          pintarHorarios();
+          actualizarResumen();
+          mostrarAviso('error', 'Alguien tomó la hora que tenías elegida. Elige otra, por favor.');
+        }
+      }
+    });
+
+    /* ------------------------------ Validación ---------------------------- */
+
+    const reglas: Record<string, (v: string) => string | null> = {
+      nombre: (v) => (v.trim().length < 3 ? 'Escribe tu nombre completo.' : null),
+      telefono: (v) => {
+        const d = v.replace(/\D/g, '');
+        return d.length < 10 || d.length > 13 ? 'Diez dígitos, con lada.' : null;
+      },
+      correo: (v) =>
+        !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())
+          ? null
+          : 'Revisa el correo, algo no cuadra.',
+      aviso: () => null,
+    };
+
+    function valorDe(control: HTMLInputElement | HTMLTextAreaElement) {
+      return control.type === 'checkbox' ? String((control as HTMLInputElement).checked) : control.value;
+    }
+
+    function pintarError(control: HTMLElement, mensaje: string | null) {
+      const campo = control.closest<HTMLElement>('.campo');
+      if (!campo) return;
+      const caja = campo.querySelector<HTMLElement>('[data-error]');
+      const texto = caja?.querySelector('span');
+      if (mensaje) {
+        campo.setAttribute('data-invalido', 'true');
+        if (caja && texto) {
+          texto.textContent = mensaje;
+          caja.hidden = false;
+        }
+      } else {
+        campo.removeAttribute('data-invalido');
+        if (caja) caja.hidden = true;
+      }
+    }
+
+    function validar(control: HTMLInputElement | HTMLTextAreaElement) {
+      if (control.name === 'aviso') {
+        const ok = (control as HTMLInputElement).checked;
+        pintarError(control, ok ? null : 'Necesitamos tu permiso para confirmarte la cita.');
+        return ok;
+      }
+      const regla = reglas[control.name];
+      if (!regla) return true;
+      const mensaje = regla(valorDe(control));
+      pintarError(control, mensaje);
+      return !mensaje;
+    }
+
+    const controles = Array.from(
+      formulario.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        '#r-nombre, #r-telefono, #r-correo, #r-aviso'
+      )
+    );
+
+    controles.forEach((control) => {
+      // Se valida al salir del campo, no mientras se escribe: corregir a media
+      // palabra produce errores que aparecen y desaparecen solos.
+      control.addEventListener('blur', () => validar(control));
+      control.addEventListener('change', () => {
+        if (control.closest('.campo')?.hasAttribute('data-invalido')) validar(control);
+      });
+    });
+
+    /* -------------------------------- Avisos ------------------------------ */
+
+    function mostrarAviso(tono: 'ok' | 'error', mensaje: string) {
+      aviso.dataset.tono = tono;
+      aviso.textContent = mensaje;
+      aviso.hidden = false;
+    }
+
+    function ocultarAviso() {
+      aviso.hidden = true;
+    }
+
+    function cargando(activo: boolean) {
+      boton.dataset.cargando = String(activo);
+      boton.disabled = activo;
+      const texto = boton.querySelector('.enviar__texto');
+      if (texto) texto.textContent = activo ? 'Apartando' : 'Reservar';
+    }
+
+    /* ---------------------------- Calendario .ics ------------------------- */
+
+    function archivoCalendario(datos: {
+      folio: string;
+      tratamiento: string;
+      cabina: string;
+      fecha: string;
+      hora: string;
+      duracion: number;
+    }) {
+      const sello = (i: Date) => i.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const escapar = (t: string) => t.replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+
+      /* RFC 5545: ninguna línea pasa de 75 octetos. Se mide en bytes UTF-8 y se
+         corta por carácter, para no dejar media eñe en cada trozo. Sin esto la
+         dirección de la casa rompe importaciones estrictas. */
+      const plegar = (linea: string) => {
+        const medir = (t: string) => new TextEncoder().encode(t).length;
+        if (medir(linea) <= 75) return linea;
+        const trozos: string[] = [];
+        let actual = '';
+        let tope = 75;
+        for (const c of linea) {
+          if (medir(actual + c) > tope) {
+            trozos.push(actual);
+            actual = c;
+            tope = 74; // la continuación gasta un octeto en el espacio inicial
+          } else {
+            actual += c;
+          }
+        }
+        trozos.push(actual);
+        return trozos.join('\r\n ');
+      };
+
+      const lineas = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        `PRODID:-//${marca.nombre}//Reservas//ES`,
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `UID:${datos.folio}@${marca.dominio}`,
+        `DTSTAMP:${sello(new Date())}`,
+        `DTSTART:${sello(instanteUtc(datos.fecha, datos.hora))}`,
+        `DTEND:${sello(instanteUtc(datos.fecha, datos.hora, datos.duracion))}`,
+        `SUMMARY:${escapar(`${datos.tratamiento} en ${marca.nombre}`)}`,
+        `LOCATION:${escapar(`${contacto.calle}, ${contacto.colonia}, ${contacto.cp}`)}`,
+        `DESCRIPTION:${escapar(`Folio ${datos.folio}. Cabina ${datos.cabina}. Tel. ${contacto.telefono}`)}`,
+        'BEGIN:VALARM',
+        'TRIGGER:-PT2H',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:${escapar(`Tu cita en ${marca.nombre} es en 2 horas`)}`,
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ];
+
+      return URL.createObjectURL(
+        new Blob([lineas.map(plegar).join('\r\n')], { type: 'text/calendar;charset=utf-8' })
+      );
+    }
+
+    /* -------------------------- Pantalla del anticipo --------------------- */
+
+    function pintarReloj(venceEn: string | null) {
+      if (relojAnticipo !== null) {
+        clearInterval(relojAnticipo);
+        relojAnticipo = null;
+      }
+      if (!venceEn) {
+        relojTexto.hidden = true;
+        return;
+      }
+
+      const refrescar = () => {
+        const falta = tiempoRestante(venceEn);
+        if (falta) {
+          relojTexto.textContent = `Te quedan ${falta} para mandar el anticipo.`;
+          relojTexto.dataset.agotado = 'false';
+        } else {
+          relojTexto.textContent =
+            'Se acabó el plazo y la cabina volvió a quedar libre. Si ya transferiste, llámanos y lo resolvemos.';
+          relojTexto.dataset.agotado = 'true';
+          if (relojAnticipo !== null) clearInterval(relojAnticipo);
+          relojAnticipo = null;
+        }
+      };
+
+      relojTexto.hidden = false;
+      refrescar();
+      // Cada 30 s. No es un cronómetro: quien transfiere necesita saber si le
+      // quedan dos horas o diez minutos, no los segundos.
+      relojAnticipo = window.setInterval(refrescar, 30_000);
+    }
+
+    function mostrarAvisoComprobante(tono: 'ok' | 'error', mensaje: string) {
+      avisoComprobante.dataset.tono = tono;
+      avisoComprobante.textContent = mensaje;
+      avisoComprobante.hidden = false;
+    }
+
+    function mostrarConfirmacion(datos: {
+      folio: string;
+      tratamiento: string;
+      cabina: string;
+      fecha: string;
+      hora: string;
+      duracion: number;
+      telefono: string;
+      anticipo: number;
+      pagoEstado: EstadoPago;
+      venceEn: string | null;
+    }) {
+      document.getElementById('conf-folio')!.textContent = datos.folio;
+      document.getElementById('conf-tratamiento')!.textContent = datos.tratamiento;
+      document.getElementById('conf-cabina')!.textContent = datos.cabina;
+      document.getElementById('conf-cuando')!.textContent =
+        `${fechaLegible(datos.fecha)}, ${horaLegible(datos.hora)}`;
+
+      citaEnCurso = { folio: datos.folio, telefono: datos.telefono };
+      const esperaAnticipo = datos.anticipo > 0 && datos.pagoEstado === 'esperando';
+
+      const titulo = document.getElementById('conf-titulo')!;
+      titulo.textContent = esperaAnticipo
+        ? 'Ya casi: falta el anticipo'
+        : 'Listo, tu cabina está apartada';
+
+      document.getElementById('conf-texto')!.textContent = esperaAnticipo
+        ? HAY_SUPABASE
+          ? 'Guardamos tu cita y te apartamos la cabina mientras llega la transferencia.'
+          : 'Esta demostración guarda la cita solo en este navegador. Con Supabase conectado, el comprobante llegaría al panel de la casa.'
+        : HAY_SUPABASE
+          ? 'Te mandamos un recordatorio por WhatsApp el día anterior. Si te surge algo, avísanos con dos horas de anticipación y liberamos la cabina.'
+          : 'Esta demostración guarda la cita solo en este navegador. Con Supabase conectado, la cita llegaría al panel de la casa al instante.';
+
+      cajaAnticipo.hidden = !esperaAnticipo;
+
+      if (esperaAnticipo) {
+        document.getElementById('anticipo-monto')!.textContent = dinero.format(datos.anticipo);
+        document.getElementById('anticipo-folio')!.textContent = datos.folio;
+        (document.getElementById('copiar-folio') as HTMLButtonElement).dataset.copiar = datos.folio;
+        // Cada reserva empieza limpia: si alguien agenda dos rituales seguidos,
+        // el segundo no puede heredar el "ya lo mandaste".
+        formComprobante.hidden = false;
+        formComprobante.reset();
+        listoAnticipo.hidden = true;
+        avisoComprobante.hidden = true;
+        pintarReloj(datos.venceEn);
+      } else {
+        pintarReloj(null);
+      }
+
+      if (urlCalendario) URL.revokeObjectURL(urlCalendario);
+      urlCalendario = archivoCalendario(datos);
+      (document.getElementById('conf-calendario') as HTMLAnchorElement).href = urlCalendario;
+
+      /* Que la clienta escriba primero no es cortesía: abre la ventana de
+         servicio de WhatsApp, y dentro de ella la casa responde y recuerda sin
+         pagar por plantilla. */
+      const mensaje = [
+        `Hola, acabo de reservar en ${marca.nombre}.`,
+        `${datos.tratamiento}, cabina ${datos.cabina}`,
+        `${fechaLegible(datos.fecha)}, ${horaLegible(datos.hora)}`,
+        `Folio: ${datos.folio}`,
+        ...(esperaAnticipo ? [`Voy a mandar el anticipo de ${dinero.format(datos.anticipo)}.`] : []),
+      ].join('\n');
+
+      (document.getElementById('conf-whatsapp') as HTMLAnchorElement).href =
+        `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+
+      formulario.hidden = true;
+      confirmada.hidden = false;
+      confirmada.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'center',
+      });
+      titulo.setAttribute('tabindex', '-1');
+      titulo.focus();
+    }
+
+    /* ------------------------ Copiar CLABE y folio ------------------------
+       Nadie teclea 18 dígitos sin equivocarse, y un dígito mal puesto manda el
+       dinero a otra cuenta. El botón no es adorno. */
+
+    cajaAnticipo.querySelectorAll<HTMLButtonElement>('.anticipo__copiar').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const valor = b.dataset.copiar;
+        if (!valor) return;
+        const etiqueta = b.querySelector('span')!;
+        const original = etiqueta.textContent;
+        try {
+          await navigator.clipboard.writeText(valor);
+          etiqueta.textContent = 'Copiado';
+          b.dataset.copiado = 'true';
+        } catch {
+          // Safari sin permiso, o contexto no seguro: se selecciona el texto
+          // para que al menos se pueda copiar a mano.
+          const dato = b.previousElementSibling;
+          if (dato) {
+            const rango = document.createRange();
+            rango.selectNodeContents(dato);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(rango);
+          }
+          etiqueta.textContent = 'Selecciónalo';
+        }
+        window.setTimeout(() => {
+          etiqueta.textContent = original;
+          delete b.dataset.copiado;
+        }, 2000);
+      });
+    });
+
+    /* --------------------------- Envío del comprobante -------------------- */
+
+    formComprobante.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      avisoComprobante.hidden = true;
+
+      const archivo = campoComprobante.files?.[0];
+      if (!archivo) {
+        mostrarAvisoComprobante('error', 'Elige la captura de tu transferencia.');
+        campoComprobante.focus();
+        return;
+      }
+      if (!citaEnCurso) {
+        mostrarAvisoComprobante(
+          'error',
+          `No encontramos tu reserva en esta pantalla. Mándanos el comprobante por WhatsApp al ${contacto.telefono}.`
+        );
+        return;
+      }
+
+      botonComprobante.dataset.cargando = 'true';
+      botonComprobante.disabled = true;
+      const textoBoton = botonComprobante.querySelector('.comprobante__texto');
+      if (textoBoton) textoBoton.textContent = 'Subiendo';
+
+      try {
+        await subirComprobante({
+          folio: citaEnCurso.folio,
+          telefono: citaEnCurso.telefono,
+          archivo,
+        });
+        formComprobante.hidden = true;
+        listoAnticipo.hidden = false;
+        avisoComprobante.hidden = true;
+        pintarReloj(null);
+      } catch (error) {
+        const mensaje =
+          error instanceof ErrorReserva
+            ? error.message
+            : `No pudimos subir el comprobante. Mándanoslo por WhatsApp al ${contacto.telefono}.`;
+        mostrarAvisoComprobante('error', mensaje);
+      } finally {
+        botonComprobante.dataset.cargando = 'false';
+        botonComprobante.disabled = false;
+        if (textoBoton) textoBoton.textContent = 'Enviar comprobante';
+      }
+    });
+
+    /* --------------------------------- Envío ------------------------------ */
+
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      ocultarAviso();
+
+      if (!diaElegido || !horaElegida) {
+        mostrarAviso('error', 'Falta elegir el día y la hora de tu cita.');
+        document.getElementById('calendario')?.scrollIntoView({ block: 'center' });
+        return;
+      }
+
+      const validos = controles.map((c) => validar(c));
+      if (validos.includes(false)) {
+        const primerFallo = formulario.querySelector<HTMLElement>(
+          '[data-invalido] input, [data-invalido] textarea'
+        );
+        primerFallo?.focus();
+        mostrarAviso('error', 'Revisa los campos marcados y vuelve a enviar.');
+        return;
+      }
+
+      const trat = tratamientoElegido();
+      const cab = cabinaElegida();
+      const datos = new FormData(formulario);
+      const telefono = String(datos.get('telefono') ?? '');
+
+      cargando(true);
+
+      try {
+        /* Solo viaja QUÉ se eligió. El precio, la duración, el buffer y el
+           anticipo los pone la base; lo que vuelve es lo que quedó guardado. */
+        const hecha = await reservar({
+          nombre: String(datos.get('nombre') ?? ''),
+          telefono,
+          correo: String(datos.get('correo') ?? '') || null,
+          tratamientoSlug: trat.slug,
+          cabinaSlug: cab.slug,
+          fecha: diaElegido,
+          hora: horaElegida,
+          notas: String(datos.get('notas') ?? '') || null,
+        });
+
+        mostrarConfirmacion({
+          folio: hecha.folio,
+          tratamiento: hecha.tratamientoNombre,
+          cabina: hecha.cabinaNombre,
+          fecha: diaElegido,
+          hora: horaElegida,
+          duracion: hecha.duracionMin,
+          telefono,
+          anticipo: hecha.anticipo,
+          pagoEstado: hecha.pagoEstado,
+          venceEn: hecha.venceEn,
+        });
+
+        formulario.reset();
+      } catch (error) {
+        const mensaje =
+          error instanceof ErrorReserva
+            ? error.message
+            : `No pudimos guardar la cita. Llámanos al ${contacto.telefono} y la agendamos por teléfono.`;
+        mostrarAviso('error', mensaje);
+
+        if (error instanceof ErrorReserva && error.codigo === 'HORA_OCUPADA') {
+          horaElegida = null;
+          await traerAgenda();
+          actualizarResumen();
+        }
+      } finally {
+        cargando(false);
+      }
+    });
+
+    document.getElementById('conf-otra')!.addEventListener('click', async () => {
+      confirmada.hidden = true;
+      formulario.hidden = false;
+      diaElegido = null;
+      horaElegida = null;
+      ocultarAviso();
+      cajaAnticipo.hidden = true;
+      citaEnCurso = null;
+      pintarReloj(null);
+      await traerAgenda();
+      actualizarResumen();
+      formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    /* ------------------------- Cambios de selección ----------------------- */
+
+    formulario
+      .querySelectorAll<HTMLInputElement>('input[name="tratamiento"], input[name="cabina"]')
+      .forEach((radio) => {
+        radio.addEventListener('change', () => {
+          // Cambiar tratamiento o cabina cambia qué horas caben: la elegida
+          // puede haber dejado de existir.
+          horaElegida = null;
+          if (diaElegido && agenda) {
+            const t = tratamientoElegido();
+            const c = cabinaElegida();
+            if (!diaTieneHuecos(agenda, diaElegido, t, c.slug)) diaElegido = null;
+          }
+          pintarCalendario();
+          pintarHorarios();
+          actualizarResumen();
+        });
+      });
+
+    /* Las tarjetas del riel mandan aquí con el tratamiento ya elegido. */
+    document.addEventListener('elegir-tratamiento', (evento) => {
+      const slug = (evento as CustomEvent<{ slug: string }>).detail?.slug;
+      if (!slug || !catalogo.some((t) => t.slug === slug)) return;
+      const radio = formulario.querySelector<HTMLInputElement>(
+        `input[name="tratamiento"][value="${slug}"]`
+      );
+      if (radio && !radio.checked) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+
+    atras.addEventListener('click', () => {
+      mesVisible =
+        mesVisible.mes === 1
+          ? { anio: mesVisible.anio - 1, mes: 12 }
+          : { anio: mesVisible.anio, mes: mesVisible.mes - 1 };
+      pintarCalendario();
+    });
+
+    adelante.addEventListener('click', () => {
+      mesVisible =
+        mesVisible.mes === 12
+          ? { anio: mesVisible.anio + 1, mes: 1 }
+          : { anio: mesVisible.anio, mes: mesVisible.mes + 1 };
+      pintarCalendario();
+    });
+
+    actualizarResumen();
+    pintarCalendario();
+    pintarHorarios();
+    traerAgenda();
+  }
+</script>
+
+<style>
+  .reserva__caja {
+    position: relative;
+  }
+
+  /* Lomo girado al margen izquierdo. Es el recurso de la referencia que da
+     carácter al bloque de color sin meter un segundo titular. Se esconde por
+     debajo de 1100px: ahí no hay margen donde vivir. */
+  .reserva__lomo {
+    position: absolute;
+    left: calc(var(--pad-x) * -0.2);
+    top: 8px;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 1100px) {
+    .reserva__lomo {
+      display: none;
+    }
+  }
+
+  .reserva__alto {
+    max-width: 58ch;
+  }
+
+  .reserva__alto h2 {
+    margin-top: 12px;
+  }
+
+  /* El panel: superficie blanca sobre el bloque blush. Sombra muy suave, sin
+     borde. Nunca los dos en el mismo elemento. */
+  .reserva__panel {
+    margin-top: clamp(28px, 3.6vw, 46px);
+    border-radius: var(--r-sup);
+    box-shadow: var(--sombra-md);
+    overflow: hidden;
+  }
+
+  .flujo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 290px);
+    gap: clamp(24px, 3vw, 44px);
+    padding: clamp(24px, 3.2vw, 44px);
+    align-items: start;
+  }
+
+  .paso {
+    grid-column: 1;
+    border: 0;
+  }
+
+  .paso + .paso {
+    margin-top: clamp(24px, 2.8vw, 36px);
+    padding-top: clamp(24px, 2.8vw, 36px);
+    border-top: 1px solid var(--linea);
+  }
+
+  .paso legend {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 18px;
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.22rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+  }
+
+  .paso__num {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: 50%;
+    font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.719rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ------------------------------- Opciones ------------------------------ */
+
+  .opciones {
+    display: grid;
+    gap: 10px;
+  }
+
+  .opciones--tratamientos {
+    grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  }
+
+  .opciones--cabinas {
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  }
+
+  .opcion {
+    position: relative;
+    cursor: pointer;
+  }
+
+  /* El radio real sigue ahí y sigue recibiendo el foco: lo que se ve es la caja
+     de al lado. */
+  .opcion input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .opcion__caja {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-sup);
+    background: transparent;
+    transition:
+      border-color 0.2s var(--ease),
+      background 0.2s var(--ease);
+  }
+
+  .opcion:hover .opcion__caja {
+    border-color: var(--ink-2);
+  }
+
+  .opcion input:focus-visible + .opcion__caja {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .opcion input:checked + .opcion__caja {
+    border-color: var(--tinta);
+    background: var(--sup);
+  }
+
+  .opcion__nombre {
+    font-size: 0.906rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+
+  .opcion__meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.781rem;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .opcion__precio {
+    color: var(--ink);
+  }
+
+  .opcion__nota {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--ink-3);
+  }
+
+  .opcion__anticipo {
+    align-self: flex-start;
+    margin-top: 3px;
+    padding: 2px 9px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    font-size: 0.688rem;
+    color: var(--acento-texto);
+  }
+
+  /* ------------------------------ Calendario ----------------------------- */
+
+  .calendario__barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .calendario__titulo {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.12rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--ink);
+  }
+
+  .calendario__mover {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.2s var(--ease);
+  }
+
+  .calendario__mover:hover:not(:disabled) {
+    border-color: var(--ink);
+  }
+
+  .calendario__mover:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .calendario__mover svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .calendario__dias,
+  .calendario__rejilla {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .calendario__dias span {
+    text-align: center;
+    font-size: 0.656rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 6px;
+  }
+
+  .calendario__cargando {
+    grid-column: 1 / -1;
+    padding: 18px 0;
+    font-size: 0.844rem;
+    color: var(--ink-3);
+  }
+
+  /* -------------------------------- Resumen ------------------------------- */
+
+  .resumen {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: calc(var(--alto-cabecera) + 16px);
+    padding: clamp(20px, 2.2vw, 26px);
+    border-radius: var(--r-sup);
+  }
+
+  .resumen__titulo {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.12rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink);
+  }
+
+  .resumen__lista {
+    display: grid;
+    gap: 13px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .resumen__lista dt {
+    font-size: 0.656rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .resumen__lista dd {
+    margin-top: 4px;
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+
+  .resumen__lista dd[data-vacio='true'] {
+    color: var(--ink-2);
+  }
+
+  .resumen__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--linea);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .resumen__total strong {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.9rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .resumen__anticipo {
+    display: grid;
+    gap: 3px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: var(--r-inner);
+    background: var(--sup-2);
+  }
+
+  .resumen__anticipo span {
+    font-size: 0.688rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .resumen__anticipo strong {
+    font-size: 1.06rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .resumen__anticipo small {
+    font-size: 0.688rem;
+    color: var(--ink-2);
+  }
+
+  .resumen__nota {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+    font-size: 0.719rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .resumen__nota svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    margin-top: 3px;
+  }
+
+  /* -------------------------------- Campos ------------------------------- */
+
+  .campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 20px 16px;
+  }
+
+  .campo--ancho {
+    grid-column: 1 / -1;
+  }
+
+  /* -------------------------------- Enviar ------------------------------- */
+
+  .enviar {
+    grid-column: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: clamp(24px, 2.8vw, 36px);
+    padding-top: clamp(24px, 2.8vw, 36px);
+    border-top: 1px solid var(--linea);
+  }
+
+  .enviar__nota {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+
+  .enviar__nota svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+
+  .aviso {
+    grid-column: 1;
+    margin-top: 14px;
+  }
+
+  /* ----------------------------- Confirmación ---------------------------- */
+
+  .confirmada {
+    padding: clamp(28px, 4vw, 56px);
+    text-align: center;
+  }
+
+  .confirmada__sello {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 22px;
+    border: 1px solid var(--ok);
+    border-radius: 50%;
+    color: var(--ok);
+  }
+
+  .confirmada__sello svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .confirmada__folio {
+    margin-top: 12px;
+    font-size: 0.813rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .confirmada__folio strong {
+    color: var(--acento-texto);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .confirmada__lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 18px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--linea);
+    text-align: left;
+  }
+
+  .confirmada__lista dt {
+    font-size: 0.656rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .confirmada__lista dd {
+    margin-top: 5px;
+    font-size: 0.906rem;
+    line-height: 1.45;
+  }
+
+  .confirmada__texto {
+    margin-top: 22px;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--ink-2);
+    text-align: left;
+  }
+
+  .confirmada__botones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .confirmada__otra {
+    border: 0;
+    background: transparent;
+    color: var(--ink-3);
+    font-size: 0.813rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* --------------------------- Anticipo por SPEI ------------------------- */
+
+  .anticipo {
+    margin-top: 28px;
+    padding: clamp(20px, 2.6vw, 30px);
+    border-radius: var(--r-sup);
+    text-align: left;
+  }
+
+  .anticipo__cabeza {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .anticipo__cabeza svg {
+    width: 21px;
+    height: 21px;
+    flex: none;
+    color: var(--acento-texto);
+  }
+
+  .anticipo__cabeza h4 {
+    color: var(--ink);
+  }
+
+  .anticipo__texto {
+    margin-top: 11px;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+
+  .anticipo__reloj {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: var(--r-inner);
+    background: var(--alerta-tenue);
+    color: var(--alerta);
+    font-size: 0.813rem;
+    font-weight: 500;
+  }
+
+  .anticipo__reloj[data-agotado='true'] {
+    background: var(--sup-2);
+    color: var(--ink-2);
+  }
+
+  .anticipo__datos {
+    display: grid;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .anticipo__datos dt {
+    font-size: 0.656rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .anticipo__datos dd {
+    margin-top: 5px;
+    font-size: 0.906rem;
+    color: var(--ink);
+  }
+
+  /* Monto y CLABE en tabular: los dígitos alineados se comparan contra la
+     pantalla del banco sin contarlos uno por uno. */
+  .anticipo__monto {
+    font-family: 'Cormorant', ui-serif, Georgia, serif;
+    font-size: 1.8rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .anticipo__copiable {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .anticipo__dato {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    user-select: all;
+  }
+
+  .anticipo__copiar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--acento-texto);
+    font-size: 0.719rem;
+    cursor: pointer;
+    transition:
+      border-color 0.2s var(--ease),
+      background 0.2s var(--ease);
+  }
+
+  .anticipo__copiar:hover {
+    border-color: var(--ink);
+    background: var(--sup);
+  }
+
+  .anticipo__copiar[data-copiado='true'] {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  .anticipo__copiar svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .anticipo__pasos {
+    display: grid;
+    gap: 9px;
+    margin-top: 20px;
+    padding-left: 20px;
+    font-size: 0.844rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .anticipo__pasos li::marker {
+    color: var(--acento-texto);
+  }
+
+  .anticipo__subida {
+    display: grid;
+    gap: 11px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .anticipo__etiqueta {
+    display: grid;
+    gap: 3px;
+    font-size: 0.781rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .anticipo__formatos {
+    font-size: 0.688rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-3);
+  }
+
+  .anticipo__subida input[type='file'] {
+    width: 100%;
+    padding: 12px;
+    border: 1px dashed var(--linea-fuerte);
+    border-radius: var(--r-inner);
+    background: transparent;
+    font-size: 0.813rem;
+    color: var(--ink-2);
+  }
+
+  .anticipo__subida input[type='file']::file-selector-button {
+    margin-right: 11px;
+    padding: 6px 13px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    font: inherit;
+    font-size: 0.75rem;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .anticipo__subida .btn {
+    justify-self: start;
+  }
+
+  .anticipo__listo {
+    display: flex;
+    gap: 13px;
+    margin-top: 22px;
+    padding: 17px;
+    border-radius: var(--r-inner);
+    background: var(--ok-tenue);
+  }
+
+  .anticipo__listo svg {
+    width: 21px;
+    height: 21px;
+    flex: none;
+    color: var(--ok);
+  }
+
+  .anticipo__listo strong {
+    font-size: 0.906rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .anticipo__listo p {
+    margin-top: 5px;
+    font-size: 0.813rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .anticipo__aviso {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: var(--ink-3);
+  }
+
+  .anticipo__aviso svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    margin-top: 2px;
+  }
+
+  /* -------------------------------- Móvil -------------------------------- */
+
+  @media (max-width: 960px) {
+    .flujo {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* El resumen cae justo antes del botón, que es donde de verdad se necesita
+       revisar el precio antes de confirmar. */
+    .resumen {
+      grid-column: 1;
+      grid-row: auto;
+      position: static;
+      order: 99;
+    }
+
+    .enviar {
+      order: 100;
+    }
+
+    .aviso {
+      order: 101;
+    }
+  }
+</style>
+
+<!-- Las celdas del calendario y los chips de hora los crea el JavaScript, así
+     que sus estilos van en un bloque global: en el bloque normal Astro los
+     descartaría por no encontrarlos en el marcado. -->
+<style is:global>
+  #calendario-rejilla .dia {
+    /* Algo más anchas que altas: a cuadro perfecto el calendario se come
+       demasiado alto en móvil. */
+    aspect-ratio: 8 / 7;
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: var(--r-inner);
+    background: transparent;
+    color: var(--ink-3);
+    font-size: 0.844rem;
+    font-variant-numeric: tabular-nums;
+    cursor: not-allowed;
+  }
+
+  #calendario-rejilla .dia--hueco {
+    border: 0;
+  }
+
+  /* Un día con lugar tiene que verse pulsable de un vistazo. El punto de abajo
+     lo marca sin depender solo del color del borde. */
+  #calendario-rejilla .dia--libre {
+    border-color: var(--linea-fuerte);
+    color: var(--ink);
+    cursor: pointer;
+    position: relative;
+    transition:
+      border-color 0.18s var(--ease),
+      background 0.18s var(--ease);
+  }
+
+  #calendario-rejilla .dia--libre::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--acento);
+  }
+
+  #calendario-rejilla .dia--libre:hover {
+    border-color: var(--ink);
+    background: var(--sup);
+  }
+
+  #calendario-rejilla .dia--elegido,
+  #calendario-rejilla .dia--elegido:hover {
+    background: var(--tinta);
+    border-color: var(--tinta);
+    color: var(--hueso);
+  }
+
+  #calendario-rejilla .dia--elegido::after {
+    background: var(--hueso);
+  }
+
+  /* Mes sin lugar: ocupa la rejilla completa y ofrece el salto al mes que sí
+     tiene. Un mes apagado sin explicación se lee como "no hay lugar nunca". */
+  #calendario-rejilla .calendario__sin-mes {
+    grid-column: 1 / -1;
+    padding: 16px 0 4px;
+    font-size: 0.844rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  #calendario-rejilla .calendario__salto {
+    display: inline-block;
+    margin-top: 2px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--acento-texto);
+    font: inherit;
+    font-size: 0.844rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* -------------------------------- Horarios ------------------------------ */
+
+  #horarios .horarios__rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 7px;
+  }
+
+  #horarios .horarios__vacio {
+    font-size: 0.844rem;
+    color: var(--ink-3);
+  }
+
+  #horarios .hora {
+    padding: 10px 6px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink);
+    font-size: 0.813rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition:
+      border-color 0.18s var(--ease),
+      background 0.18s var(--ease);
+  }
+
+  #horarios .hora:hover:not(:disabled) {
+    border-color: var(--ink);
+    background: var(--sup);
+  }
+
+  /* Hora anclada al minuto en que la cabina queda libre. Se marca con un punto
+     porque es la que llena mejor la tarde, y verla distinta ayuda a elegirla. */
+  #horarios .hora[data-anclado='true'] {
+    position: relative;
+  }
+
+  #horarios .hora[data-anclado='true']::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--acento);
+  }
+
+  /* Hora ya reservada: se ve, para que se note que la casa está llena a esa
+     hora, en vez de desaparecer y dejar la duda. */
+  #horarios .hora:disabled {
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-3);
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  #horarios .hora--elegida,
+  #horarios .hora--elegida:hover {
+    background: var(--tinta);
+    border-color: var(--tinta);
+    color: var(--hueso);
+  }
+
+  #horarios .hora--elegida[data-anclado='true']::before {
+    background: var(--hueso);
+  }
+
+  #horarios .horarios__pie {
+    margin-top: 12px;
+    font-size: 0.781rem;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Las horas que dejarían hueco muerto: disponibles, pero fuera del camino por
+     defecto. Acordeón nativo, sin JavaScript de más. */
+  #horarios .horarios__otros {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--linea);
+  }
+
+  #horarios .horarios__otros summary {
+    font-size: 0.813rem;
+    color: var(--acento-texto);
+    cursor: pointer;
+  }
+
+  #horarios .horarios__nota {
+    margin: 10px 0 13px;
+    font-size: 0.781rem;
+    line-height: 1.6;
+    color: var(--ink-3);
+    max-width: 62ch;
+  }
+</style>

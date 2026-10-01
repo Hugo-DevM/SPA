@@ -1,0 +1,95 @@
+---
+import Logo from './Logo.astro';
+import { navegacion, CTA_PRINCIPAL } from '../data/spa';
+---
+
+<!-- Cabecera flotante en pastilla, como la de la referencia: no toca los bordes
+     del viewport y deja ver el lienzo por detrás. -->
+<header class="cabecera">
+  <div class="envoltura">
+    <div class="cabecera__pastilla">
+      <a class="cabecera__marca" href="/" aria-label="Casa Vapor, inicio">
+        <Logo />
+      </a>
+
+      <!-- Una sola línea en escritorio. Si no cupiera, se acortan etiquetas; una
+           cabecera de dos líneas es diseño roto. -->
+      <nav class="cabecera__nav" aria-label="Secciones">
+        {navegacion.map((n) => <a href={n.href}>{n.etiqueta}</a>)}
+      </nav>
+
+      <a class="btn btn--sm cabecera__cta" href="#reservar">{CTA_PRINCIPAL}</a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .cabecera {
+    position: fixed;
+    inset: 12px 0 auto;
+    z-index: 40;
+  }
+
+  .cabecera__pastilla {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    height: calc(var(--alto-cabecera) - 16px);
+    padding: 0 10px 0 22px;
+    border: 1px solid var(--linea);
+    border-radius: var(--r-pill);
+    background: rgb(250 248 245 / 0.86);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sombra-sm);
+  }
+
+  /* Sin blur, fondo sólido: el texto sobre la foto del hero tiene que seguir
+     legible. */
+  @supports not (backdrop-filter: blur(4px)) {
+    .cabecera__pastilla {
+      background: var(--hueso);
+    }
+  }
+
+  .cabecera__marca {
+    text-decoration: none;
+  }
+
+  .cabecera__nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(18px, 2.4vw, 34px);
+    margin-left: auto;
+  }
+
+  .cabecera__nav a {
+    font-size: 0.844rem;
+    font-weight: 400;
+    color: var(--tinta-2);
+    text-decoration: none;
+    transition: color 0.2s var(--ease);
+  }
+
+  .cabecera__nav a:hover {
+    color: var(--tinta);
+  }
+
+  /* En móvil la navegación sale de la cabecera: las mismas secciones están en
+     la barra inferior y en el pie. Un menú hamburguesa para tres enlaces es un
+     clic de más. */
+  @media (max-width: 820px) {
+    .cabecera__nav {
+      display: none;
+    }
+
+    .cabecera__cta {
+      margin-left: auto;
+    }
+
+    .cabecera__pastilla {
+      padding-left: 16px;
+    }
+  }
+</style>

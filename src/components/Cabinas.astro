@@ -1,0 +1,130 @@
+---
+import { cabinas } from '../data/spa';
+const [principal, ...resto] = cabinas.lista;
+---
+
+<!-- Familia: una cabina grande en arco a la izquierda y las otras dos apiladas
+     a la derecha. Tres celdas para tres cabinas; tres tarjetas iguales en fila
+     sería la salida fácil y no dice que una cabina es distinta de las otras. -->
+<section class="cabinas seccion lienzo--hueso" id="cabinas">
+  <div class="envoltura">
+    <div class="cabinas__alto revelar">
+      <p class="sobre-titulo">{cabinas.texto}</p>
+      <h2>Las cabinas</h2>
+    </div>
+
+    <div class="bento revelar">
+      <article class="celda celda--grande">
+        <div class="celda__foto arco">
+          <img src={principal.imagen} alt={principal.alt} width="800" height="600" loading="lazy" decoding="async" />
+        </div>
+        <div class="celda__texto">
+          <h3>{principal.nombre}</h3>
+          <p>{principal.detalle}</p>
+        </div>
+      </article>
+
+      <div class="bento__columna">
+        {
+          resto.map((c) => (
+            <article class="celda">
+              <div class="celda__foto">
+                <img src={c.imagen} alt={c.alt} width="800" height="600" loading="lazy" decoding="async" />
+              </div>
+              <div class="celda__texto">
+                <h3>{c.nombre}</h3>
+                <p>{c.detalle}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cabinas__alto {
+    max-width: 56ch;
+  }
+
+  .cabinas__alto h2 {
+    margin-top: 12px;
+  }
+
+  .bento {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: var(--gap);
+    margin-top: clamp(30px, 3.8vw, 48px);
+    align-items: start;
+  }
+
+  .bento__columna {
+    display: grid;
+    gap: var(--gap);
+  }
+
+  .celda__foto {
+    overflow: hidden;
+    background: var(--sup-2);
+  }
+
+  /* Solo la cabina principal lleva arco: si las tres lo llevaran, el recurso
+     dejaría de señalar cuál manda.
+
+     El radio va en las DOS de la columna y no en `.celda__foto` a secas.
+     Puesto arriba pisaba el arco: `.arco` vive en global.css y una regla con
+     el mismo peso declarada en el `<style>` del componente le gana por el
+     atributo de ámbito que le añade Astro. La cabina principal llevaba la
+     clase desde el primer día y el arco no se veía. */
+  .celda--grande .celda__foto {
+    aspect-ratio: 4 / 5;
+  }
+
+  .bento__columna .celda__foto {
+    aspect-ratio: 16 / 10;
+    border-radius: var(--r-sup);
+  }
+
+  .celda__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s var(--ease);
+  }
+
+  .celda:hover .celda__foto img {
+    transform: scale(1.03);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .celda__foto img,
+    .celda:hover .celda__foto img {
+      transition: none;
+      transform: none;
+    }
+  }
+
+  .celda__texto {
+    padding-top: 14px;
+  }
+
+  .celda__texto p {
+    margin-top: 4px;
+    font-size: 0.844rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+    max-width: 38ch;
+  }
+
+  @media (max-width: 860px) {
+    .bento {
+      grid-template-columns: 1fr;
+    }
+
+    .celda--grande .celda__foto {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>

@@ -1,0 +1,274 @@
+---
+import { Icon } from 'astro-icon/components';
+import { tratamientos } from '../data/spa';
+
+const precio = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+---
+
+<!-- Familia: riel horizontal con scroll-snap. Cinco tratamientos no caben en
+     tres tarjetas iguales, y en una lista con viñetas no se comparan. El riel
+     deja hojear con el pulgar sin recortar el catálogo. -->
+<section class="tratamientos seccion lienzo--hueso" id="tratamientos">
+  <div class="envoltura">
+    <div class="tratamientos__alto revelar">
+      <p class="sobre-titulo">Duran lo que duran, no lo que cabe en la agenda</p>
+      <h2>Tratamientos</h2>
+      <p class="entrada">
+        De treinta minutos a dos horas. La agenda lo sabe, así que nunca te va a
+        ofrecer una hora donde no cabe completo.
+      </p>
+    </div>
+  </div>
+
+  <div class="riel revelar" role="group" aria-label="Tratamientos">
+    <ul class="riel__pista">
+      {
+        tratamientos.map((t) => (
+          <li class="carta tarjeta tarjeta--alzable">
+            <div class="carta__foto arco">
+              <img src={t.imagen} alt={t.alt} width="900" height="1200" loading="lazy" decoding="async" />
+            </div>
+
+            <div class="carta__cuerpo">
+              <div class="carta__encabezado">
+                <h3>{t.nombre}</h3>
+                <span class="carta__precio cifra-serif">{precio.format(t.precio)}</span>
+              </div>
+
+              {/* Duración y anticipo como insignias, no como gris de 12px:
+                  son las dos cosas que más deciden si alguien reserva, y
+                  estaban escritas igual que el pie de foto. */}
+              <p class="carta__insignias">
+                <span class="insignia insignia--tenue">
+                  <Icon name="ph:clock" aria-hidden="true" />
+                  {t.duracionMin} min
+                </span>
+                {/* El tono distingue: el que PIDE anticipo va en acento
+                    porque es una condición, el que no lo pide va neutro
+                    porque es la ausencia de una. Con los dos en acento el
+                    color dejaba de querer decir nada. */}
+                <span class={t.anticipo > 0 ? 'insignia insignia--acento' : 'insignia insignia--tenue'}>
+                  {t.anticipo > 0 ? `${precio.format(t.anticipo)} de anticipo` : 'Sin anticipo'}
+                </span>
+              </p>
+
+              <p class="carta__texto">{t.texto}</p>
+
+              <ul class="carta__incluye">
+                {t.incluye.map((i) => (
+                  <li>
+                    <Icon name="ph:check" aria-hidden="true" />
+                    {i}
+                  </li>
+                ))}
+              </ul>
+
+              <button class="btn btn--linea btn--full carta__cta" type="button" data-tratamiento={t.slug}>
+                Reservar este
+              </button>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <p class="envoltura micro riel__nota">
+    Desliza para ver los cinco. Los precios incluyen uso de regadera y vestidor.
+  </p>
+</section>
+
+<script>
+  import { tratamientos } from '../data/spa';
+
+  /* Los botones llevan al formulario con el tratamiento ya elegido. Se manda un
+     evento en vez de tocar el DOM del formulario desde aquí: así esta sección no
+     necesita saber cómo está armado el otro componente. */
+  document.querySelectorAll<HTMLButtonElement>('[data-tratamiento]').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const slug = boton.dataset.tratamiento;
+      if (!slug || !tratamientos.some((t) => t.slug === slug)) return;
+
+      document.dispatchEvent(new CustomEvent('elegir-tratamiento', { detail: { slug } }));
+
+      document.getElementById('reservar')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+  });
+</script>
+
+<style>
+  .tratamientos {
+    padding-bottom: clamp(44px, 5vw, 72px);
+  }
+
+  .tratamientos__alto {
+    max-width: 60ch;
+  }
+
+  .tratamientos__alto h2 {
+    margin-top: 12px;
+  }
+
+  .tratamientos__alto .entrada {
+    margin-top: 18px;
+  }
+
+  /* ------------------------------- El riel ------------------------------- */
+
+  .riel {
+    margin-top: clamp(32px, 4vw, 54px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: max(var(--pad-x), calc((100vw - var(--ancho)) / 2));
+    scrollbar-width: thin;
+    scrollbar-color: var(--linea-fuerte) transparent;
+  }
+
+  .riel::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  .riel::-webkit-scrollbar-thumb {
+    background: var(--linea-fuerte);
+    border-radius: var(--r-pill);
+  }
+
+  .riel__pista {
+    display: flex;
+    gap: var(--gap);
+    list-style: none;
+    /* El primero y el último se alinean con la envoltura, pero el riel ocupa el
+       ancho completo: así se ve que hay más a la derecha. */
+    padding-inline: max(var(--pad-x), calc((100vw - var(--ancho)) / 2));
+    padding-bottom: 20px;
+  }
+
+  /* Ahora SÍ tarjeta. Antes iba suelta sobre el blanco: con cinco al hilo no
+     se veía dónde acababa una y empezaba la otra, y el riel se leía como una
+     lista de fotos. La caja es lo que convierte cada tratamiento en algo que
+     se compara con el de al lado. */
+  .carta {
+    flex: 0 0 min(320px, 78vw);
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  /* 4/5 y no 3/4: la foto original es 900x1200 y a 3/4 la tarjeta se iba a
+     novecientos de alto. Recorta poco y deja sitio al cuerpo. */
+  .carta__foto {
+    aspect-ratio: 4 / 5;
+    background: var(--sup-2);
+  }
+
+  .carta__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s var(--ease);
+  }
+
+  .carta:hover .carta__foto img {
+    transform: scale(1.04);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carta__foto img,
+    .carta:hover .carta__foto img {
+      transition: none;
+      transform: none;
+    }
+  }
+
+  .carta__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    padding: 18px 8px 8px;
+    flex: 1;
+  }
+
+  /* Nombre y precio en el mismo renglón, el precio alineado a la derecha. Es
+     lo primero que se busca al comparar cinco tratamientos. */
+  .carta__encabezado {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* La serif en el monto: mismo papel que en la franja de cifras. La familia
+     y las figuras de caja alta las pone `.cifra-serif`. */
+  .carta__precio {
+    font-size: 1.45rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--acento-texto);
+    white-space: nowrap;
+  }
+
+  /* El anticipo se avisa en la tarjeta, no al final del formulario. Enterarse
+     de que hay que transferir después de llenar todo es lo que hace abandonar.
+     Y los que NO lo piden también lo dicen: el hueco se leía como un olvido. */
+  .carta__insignias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .carta__texto {
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+  }
+
+  .carta__incluye {
+    display: grid;
+    gap: 7px;
+    list-style: none;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+
+  .carta__incluye li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.813rem;
+    color: var(--ink-2);
+  }
+
+  .carta__incluye svg {
+    width: 13px;
+    height: 13px;
+    flex: none;
+    margin-top: 5px;
+    color: var(--acento-texto);
+  }
+
+  /* El botón se pega abajo: con textos de distinto largo, los CTA acaban a
+     alturas distintas y la fila se ve rota. */
+  .carta__cta {
+    margin-top: 14px;
+  }
+
+  .riel__nota {
+    margin-top: 14px;
+  }
+
+  @media (max-width: 860px) {
+    .carta {
+      flex-basis: min(268px, 80vw);
+    }
+  }
+</style>
