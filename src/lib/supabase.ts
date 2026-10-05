@@ -17,8 +17,8 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const URL_SUPABASE = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
-const CLAVE_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+const URL_SUPABASE = import.meta.env.SUPABASE_URL as string | undefined;
+const CLAVE_ANON = import.meta.env.SUPABASE_ANON_KEY as string | undefined;
 
 export const HAY_SUPABASE = Boolean(URL_SUPABASE && CLAVE_ANON);
 

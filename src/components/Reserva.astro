@@ -352,10 +352,58 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
         </section>
 
         <div class="confirmada__botones">
-          <a class="btn btn--linea" id="conf-calendario" href="#" download="cita-casa-vapor.ics">
-            <Icon name="ph:calendar-check" aria-hidden="true" />
-            Añadir a mi calendario
-          </a>
+          <div class="agregar">
+            <button
+              class="btn btn--linea agregar__abrir"
+              type="button"
+              id="cal-abrir"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="cal-menu"
+            >
+              <Icon name="ph:calendar-check" aria-hidden="true" />
+              Añadir a mi calendario
+              <Icon name="ph:caret-down" class="agregar__flecha" aria-hidden="true" />
+            </button>
+
+            <div class="agregar__menu" id="cal-menu" role="menu" aria-labelledby="cal-abrir" hidden>
+              <a
+                class="agregar__opcion"
+                id="cal-google"
+                role="menuitem"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                <Icon name="ph:google-logo" aria-hidden="true" />
+                Google Calendar
+              </a>
+              <a
+                class="agregar__opcion"
+                id="cal-outlook"
+                role="menuitem"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                <Icon name="ph:microsoft-outlook-logo" aria-hidden="true" />
+                Outlook
+              </a>
+              <a
+                class="agregar__opcion"
+                id="cal-ics"
+                role="menuitem"
+                href="#"
+                download="cita-casa-vapor.ics"
+              >
+                <Icon name="ph:apple-logo" aria-hidden="true" />
+                <span>
+                  Apple Calendar u otro
+                  <small>Descarga un archivo .ics</small>
+                </span>
+              </a>
+            </div>
+          </div>
           <a class="btn btn--linea" id="conf-whatsapp" href="#" target="_blank" rel="noopener">
             <Icon name="ph:whatsapp-logo" aria-hidden="true" />
             Escribirnos
@@ -439,6 +487,11 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
     const avisoComprobante = document.getElementById('comprobante-aviso')!;
     const listoAnticipo = document.getElementById('anticipo-listo')!;
     const relojTexto = document.getElementById('anticipo-reloj')!;
+    const abrirCalendario = document.getElementById('cal-abrir') as HTMLButtonElement;
+    const menuCalendario = document.getElementById('cal-menu')!;
+    const enlaceGoogleCal = document.getElementById('cal-google') as HTMLAnchorElement;
+    const enlaceOutlookCal = document.getElementById('cal-outlook') as HTMLAnchorElement;
+    const enlaceIcs = document.getElementById('cal-ics') as HTMLAnchorElement;
 
     const resumen = {
       tratamiento: document.getElementById('res-tratamiento')!,
@@ -858,16 +911,62 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
       if (texto) texto.textContent = activo ? 'Apartando' : 'Reservar';
     }
 
-    /* ---------------------------- Calendario .ics ------------------------- */
+    /* -------------------------- Añadir al calendario ----------------------- */
 
-    function archivoCalendario(datos: {
+    /* El evento, una sola vez. Los tres destinos (Google, Outlook y el .ics)
+       dicen lo mismo porque leen de aquí. */
+    type CitaConfirmada = {
       folio: string;
       tratamiento: string;
       cabina: string;
       fecha: string;
       hora: string;
       duracion: number;
-    }) {
+    };
+
+    function datosEvento(datos: CitaConfirmada) {
+      return {
+        titulo: `${datos.tratamiento} en ${marca.nombre}`,
+        lugar: `${contacto.calle}, ${contacto.colonia}, ${contacto.cp}`,
+        detalle: `Folio ${datos.folio}. Cabina ${datos.cabina}. Tel. ${contacto.telefono}`,
+        inicio: instanteUtc(datos.fecha, datos.hora),
+        fin: instanteUtc(datos.fecha, datos.hora, datos.duracion),
+      };
+    }
+
+    /* Google y Outlook abren su web con la cita ya cargada: la clienta solo
+       confirma. Es a donde va la mayoría; la descarga queda como tercera
+       opción, para quien usa Apple o un cliente de escritorio. */
+    function enlaceGoogle(datos: CitaConfirmada) {
+      const e = datosEvento(datos);
+      const compacto = (i: Date) => i.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const parametros = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: e.titulo,
+        dates: `${compacto(e.inicio)}/${compacto(e.fin)}`,
+        details: e.detalle,
+        location: e.lugar,
+      });
+      return `https://calendar.google.com/calendar/render?${parametros}`;
+    }
+
+    function enlaceOutlook(datos: CitaConfirmada) {
+      const e = datosEvento(datos);
+      const iso = (i: Date) => i.toISOString().replace(/\.\d{3}Z$/, 'Z');
+      const parametros = new URLSearchParams({
+        rru: 'addevent',
+        subject: e.titulo,
+        startdt: iso(e.inicio),
+        enddt: iso(e.fin),
+        body: e.detalle,
+        location: e.lugar,
+        allday: 'false',
+      });
+      return `https://outlook.live.com/calendar/0/action/compose?${parametros}`;
+    }
+
+    function archivoCalendario(datos: CitaConfirmada) {
+      const e = datosEvento(datos);
       const sello = (i: Date) => i.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
       const escapar = (t: string) => t.replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
 
@@ -901,11 +1000,11 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
         'BEGIN:VEVENT',
         `UID:${datos.folio}@${marca.dominio}`,
         `DTSTAMP:${sello(new Date())}`,
-        `DTSTART:${sello(instanteUtc(datos.fecha, datos.hora))}`,
-        `DTEND:${sello(instanteUtc(datos.fecha, datos.hora, datos.duracion))}`,
-        `SUMMARY:${escapar(`${datos.tratamiento} en ${marca.nombre}`)}`,
-        `LOCATION:${escapar(`${contacto.calle}, ${contacto.colonia}, ${contacto.cp}`)}`,
-        `DESCRIPTION:${escapar(`Folio ${datos.folio}. Cabina ${datos.cabina}. Tel. ${contacto.telefono}`)}`,
+        `DTSTART:${sello(e.inicio)}`,
+        `DTEND:${sello(e.fin)}`,
+        `SUMMARY:${escapar(e.titulo)}`,
+        `LOCATION:${escapar(e.lugar)}`,
+        `DESCRIPTION:${escapar(e.detalle)}`,
         'BEGIN:VALARM',
         'TRIGGER:-PT2H',
         'ACTION:DISPLAY',
@@ -919,6 +1018,36 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
         new Blob([lineas.map(plegar).join('\r\n')], { type: 'text/calendar;charset=utf-8' })
       );
     }
+
+    function cerrarMenuCalendario() {
+      menuCalendario.hidden = true;
+      abrirCalendario.setAttribute('aria-expanded', 'false');
+    }
+
+    abrirCalendario.addEventListener('click', () => {
+      if (menuCalendario.hidden) {
+        menuCalendario.hidden = false;
+        abrirCalendario.setAttribute('aria-expanded', 'true');
+        menuCalendario.querySelector<HTMLAnchorElement>('.agregar__opcion')?.focus();
+      } else {
+        cerrarMenuCalendario();
+      }
+    });
+
+    menuCalendario.addEventListener('click', cerrarMenuCalendario);
+
+    document.addEventListener('click', (evento) => {
+      if (menuCalendario.hidden) return;
+      const destino = evento.target;
+      if (destino instanceof Element && destino.closest('.agregar')) return;
+      cerrarMenuCalendario();
+    });
+
+    document.addEventListener('keydown', (evento) => {
+      if (evento.key !== 'Escape' || menuCalendario.hidden) return;
+      cerrarMenuCalendario();
+      abrirCalendario.focus();
+    });
 
     /* -------------------------- Pantalla del anticipo --------------------- */
 
@@ -1010,9 +1139,12 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
         pintarReloj(null);
       }
 
+      cerrarMenuCalendario();
+      enlaceGoogleCal.href = enlaceGoogle(datos);
+      enlaceOutlookCal.href = enlaceOutlook(datos);
       if (urlCalendario) URL.revokeObjectURL(urlCalendario);
       urlCalendario = archivoCalendario(datos);
-      (document.getElementById('conf-calendario') as HTMLAnchorElement).href = urlCalendario;
+      enlaceIcs.href = urlCalendario;
 
       /* Que la clienta escriba primero no es cortesía: abre la ventana de
          servicio de WhatsApp, y dentro de ella la casa responde y recuerda sin
@@ -1741,6 +1873,69 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
     align-items: center;
     gap: 10px;
     margin-top: 28px;
+  }
+
+  /* Menú de "añadir a mi calendario". Tres destinos en vez de una descarga
+     seca: la mayoría vive en Google o en Outlook, y un .ics en la carpeta de
+     descargas no es una cita agendada. */
+  .agregar {
+    position: relative;
+  }
+
+  .agregar__flecha {
+    width: 13px;
+    height: 13px;
+    transition: transform 0.2s var(--ease);
+  }
+
+  .agregar__abrir[aria-expanded='true'] .agregar__flecha {
+    transform: rotate(180deg);
+  }
+
+  .agregar__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 3;
+    min-width: 240px;
+    padding: 6px;
+    transform: translateX(-50%);
+    border: 1px solid var(--linea);
+    border-radius: var(--r-inner);
+    background: var(--sup);
+    box-shadow: var(--sombra-md);
+    text-align: left;
+  }
+
+  .agregar__opcion {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    color: var(--ink);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: background 0.2s var(--ease);
+  }
+
+  .agregar__opcion:hover,
+  .agregar__opcion:focus-visible {
+    background: var(--sup-2);
+  }
+
+  .agregar__opcion svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+    color: var(--ink-3);
+  }
+
+  .agregar__opcion small {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-3);
+    font-size: 0.75rem;
   }
 
   .confirmada__otra {
