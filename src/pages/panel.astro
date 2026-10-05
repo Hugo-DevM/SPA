@@ -867,9 +867,13 @@ const RANGOS = [
     border-color: var(--acento-texto);
   }
 
+  /* Relleno terracota con letra hueso: 5.00, AA, y es lo que el sistema usa
+     para decir "esto está activo". Antes apuntaba a `--acento-fondo`, un token
+     que no existe: la declaración se caía, el chip se quedaba transparente y
+     con la letra hueso encima no se veía ni el elegido ni su borde. */
   .filtro[aria-pressed='true'] {
-    background: var(--acento-fondo);
-    border-color: var(--acento-fondo);
+    background: var(--acento);
+    border-color: var(--acento);
     color: var(--hueso);
   }
 

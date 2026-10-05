@@ -1535,7 +1535,7 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
   .opcion input:checked + .opcion__caja {
     border-color: var(--tinta);
-    background: var(--sup);
+    background: var(--sup-2);
   }
 
   .opcion__nombre {
@@ -2253,9 +2253,11 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
     background: var(--acento);
   }
 
+  /* Mismo motivo que el chip de hora: sobre lienzo blanco el relleno del hover
+     va en `--sup-2`. */
   #calendario-rejilla .dia--libre:hover {
     border-color: var(--ink);
-    background: var(--sup);
+    background: var(--sup-2);
   }
 
   #calendario-rejilla .dia--elegido,
@@ -2319,9 +2321,12 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
       background 0.18s var(--ease);
   }
 
+  /* `--sup-2`, no `--sup`: el formulario vive en lienzo blanco, donde `--sup`
+     es hueso y queda a un 1% del panel. Con eso el relleno del hover existía y
+     no se veía, y la hora se perdía justo al apuntarla. */
   #horarios .hora:hover:not(:disabled) {
     border-color: var(--ink);
-    background: var(--sup);
+    background: var(--sup-2);
   }
 
   /* Hora anclada al minuto en que la cabina queda libre. Se marca con un punto
