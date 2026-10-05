@@ -2323,8 +2323,13 @@ const DIAS_CORTOS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
   /* `--sup-2`, no `--sup`: el formulario vive en lienzo blanco, donde `--sup`
      es hueso y queda a un 1% del panel. Con eso el relleno del hover existía y
-     no se veía, y la hora se perdía justo al apuntarla. */
-  #horarios .hora:hover:not(:disabled) {
+     no se veía, y la hora se perdía justo al apuntarla.
+
+     El `:not(.hora--elegida)` no es adorno: el `:not(:disabled)` sube esta
+     regla a tres clases y le gana a `.hora--elegida:hover`, que solo tiene dos.
+     Sin él, apuntar la hora ya elegida le pisaba el relleno oscuro con
+     `--sup-2` y dejaba la letra hueso que sí sobrevive: 1.04:1, invisible. */
+  #horarios .hora:hover:not(:disabled):not(.hora--elegida) {
     border-color: var(--ink);
     background: var(--sup-2);
   }
